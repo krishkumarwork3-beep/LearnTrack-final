@@ -1,0 +1,39 @@
+UCS420: COGNITIVE COMPUTING
+
+L T P Cr
+3 0 2 4
+
+Course Objectives:
+To understand the fundamentals of cognitive computing and artificial intelligence.
+To learn various cognitive computing techniques and their applications.
+To develop practical skills in implementing cognitive systems.
+
+Introduction to Cognitive Computing: Overview of cognitive systems, Artificial Intelligence (AI), Machine Learning (ML), Deep Learning, Cognitive computing vs traditional computing, Applications of cognitive computing in various domains
+
+Knowledge Representation and Reasoning: Semantic networks, Frames and scripts, Ontologies and knowledge graphs, Rule-based systems, Fuzzy logic, Probabilistic reasoning, Bayesian networks
+
+Natural Language Processing: Text preprocessing, Tokenization and stemming, Part-of-speech tagging, Named entity recognition, Sentiment analysis, Language models, Word embeddings (Word2Vec, GloVe), Transformers and attention mechanisms
+
+Machine Learning for Cognitive Systems: Supervised learning algorithms, Unsupervised learning (clustering, dimensionality reduction), Reinforcement learning basics, Neural networks and deep learning, Convolutional Neural Networks (CNNs), Recurrent Neural Networks (RNNs)
+
+Computer Vision: Image preprocessing and feature extraction, Object detection and recognition, Image segmentation, Face recognition systems, Scene understanding, Applications in autonomous vehicles
+
+Laboratory Work:
+Implementation of NLP techniques
+Development of chatbot systems
+Image classification using CNNs
+Sentiment analysis projects
+
+Course Learning Outcomes:
+Upon completion of this course, students will be able to:
+1. Understand core concepts of cognitive computing
+2. Implement NLP and computer vision systems
+3. Design and deploy cognitive applications
+
+Text Books:
+1. "Artificial Intelligence: A Modern Approach" by Stuart Russell and Peter Norvig
+2. "Deep Learning" by Ian Goodfellow, Yoshua Bengio, and Aaron Courville
+
+Reference Books:
+1. "Pattern Recognition and Machine Learning" by Christopher Bishop
+2. "Natural Language Processing with Python" by Steven Bird

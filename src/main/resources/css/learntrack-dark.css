@@ -1,0 +1,328 @@
+/*
+ * LearnTrack dark theme.
+ *
+ * Loaded after learntrack.css. Every colour the dark palette uses is declared once in the
+ * .root block below; the rules after it only reference tokens, so no colour is hardcoded
+ * further down and nothing here is blue or purple.
+ *
+ * Palette: window #131412, panel #1B1C1A, raised #242522, border #303230, hairline #262826,
+ * text #E8E5DD, muted #A09D95, faint #76746D, sage accent #8CCBA5, success #7CC98F,
+ * warning #C98A68, danger #E5857A.
+ */
+
+.root {
+    /* surfaces */
+    -lt-bg: #131412;
+    -lt-surface: #1B1C1A;
+    -lt-surface-alt: #242522;
+    -lt-surface-sunken: #242522;
+
+    /* lines */
+    -lt-border: #303230;
+    -lt-border-strong: #303230;
+    -lt-hairline: #262826;
+
+    /* text */
+    -lt-text: #E8E5DD;
+    -lt-text-body: #E8E5DD;
+    -lt-muted: #A09D95;
+    -lt-faint: #76746D;
+    -lt-on-accent: #161714;
+
+    /* sage accent: selection, focus, links and progress in the dark palette */
+    -lt-primary: #8CCBA5;
+    -lt-primary-hover: #8CCBA5;
+    -lt-primary-soft: #242522;
+    -lt-accent: #8CCBA5;
+    -lt-accent-soft: #242522;
+
+    /* primary button: off-white fill, ink text */
+    -lt-on-primary: #E8E5DD;
+    -lt-on-primary-text: #161714;
+
+    /* semantic colours */
+    -lt-success: #7CC98F;
+    -lt-success-soft: #242522;
+    -lt-warning: #C98A68;
+    -lt-warning-soft: #26211F;
+    -lt-warning-border: #6B4A3A;
+    -lt-danger: #E5857A;
+    -lt-danger-soft: #2A1C19;
+    -lt-danger-border: #E5857A;
+    -lt-info: #8CCBA5;
+    -lt-info-soft: #242522;
+    -lt-violet: #A09D95;
+    -lt-violet-soft: #242522;
+
+    /* calendar tints: exams are warm clay, MST/EST windows are a neutral slate */
+    -lt-cal-study: #1B1C1A;
+    -lt-cal-study-border: #303230;
+    -lt-cal-done: #242522;
+    -lt-cal-done-border: #8CCBA5;
+    -lt-cal-eve: #1D2227;
+    -lt-cal-eve-border: #3A4750;
+    -lt-cal-exam: #26211F;
+    -lt-cal-window: #1D2227;
+
+    /* progress and schedule row bars */
+    -lt-progress-track: #303230;
+    -lt-row-fixed: #76746D;
+    -lt-row-study: #8CCBA5;
+
+    -fx-background-color: -lt-bg;
+    -fx-text-fill: -lt-text-body;
+
+    /*
+     * Controls the theme does not style explicitly fall back to Modena's own palette
+     * (#f4f4f4 backgrounds, near-black text). Re-point the base colours at the dark tokens
+     * so labels, radio buttons, check boxes, titled panes and control interiors stay dark.
+     */
+    -fx-base: -lt-surface;
+    -fx-background: -lt-bg;
+    -fx-control-inner-background: -lt-surface;
+    -fx-control-inner-background-alt: -lt-surface-alt;
+    -fx-text-background-color: -lt-text-body;
+    -fx-accent: -lt-primary;
+    -fx-focus-color: -lt-primary;
+    -fx-faint-focus-color: transparent;
+    -fx-selection-bar: -lt-primary-soft;
+    -fx-selection-bar-non-focused: -lt-surface-sunken;
+    -fx-selection-bar-text: -lt-text;
+    -fx-default-button: -lt-on-primary;
+    -fx-highlight-fill: -lt-primary;
+    -fx-highlight-text-fill: -lt-on-accent;
+}
+
+/* ------------------------------------------------------------------ buttons */
+
+/* The primary action is the one solid control: off-white fill, ink text. */
+.btn-primary {
+    -fx-background-color: -lt-on-primary;
+    -fx-border-color: transparent;
+    -fx-text-fill: -lt-on-primary-text;
+}
+
+.btn-primary:hover {
+    -fx-background-color: -lt-on-primary;
+    -fx-opacity: 0.88;
+}
+
+.btn-primary:pressed {
+    -fx-background-color: -lt-on-primary;
+    -fx-opacity: 0.76;
+}
+
+/* Dialog default buttons get the same solid off-white treatment as the primary action. */
+.button:default {
+    -fx-background-color: -lt-on-primary;
+    -fx-border-color: transparent;
+    -fx-text-fill: -lt-on-primary-text;
+}
+
+.button:default:hover {
+    -fx-background-color: -lt-on-primary;
+    -fx-opacity: 0.88;
+}
+
+/* Secondary and danger buttons are outlines: 1px border, accent text. */
+.btn-secondary {
+    -fx-background-color: -lt-surface;
+    -fx-border-color: -lt-border;
+    -fx-text-fill: -lt-text;
+}
+
+.btn-secondary:hover {
+    -fx-background-color: -lt-surface-alt;
+}
+
+.btn-danger:hover,
+.btn-danger-soft:hover {
+    -fx-text-fill: -lt-on-accent;
+}
+
+/* ------------------------------------------------------------------ controls */
+
+/* Check boxes and radio buttons fill with the sage accent. */
+.check-box:selected .box {
+    -fx-background-color: -lt-primary;
+    -fx-border-color: -lt-primary;
+}
+
+.check-box:selected .mark {
+    -fx-background-color: -lt-on-accent;
+}
+
+.radio-button:selected .dot {
+    -fx-background-color: -lt-primary;
+}
+
+/* ------------------------------------------------------------------ status */
+
+/* Chips and badges sit on any surface, so they keep a hairline outline. */
+.chip,
+.badge {
+    -fx-border-color: -lt-border;
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+}
+
+/* Badges are neutral chips in the dark palette. */
+.badge,
+.badge-neutral,
+.badge-success,
+.badge-warning,
+.badge-danger,
+.badge-info,
+.badge-violet {
+    -fx-background-color: -lt-surface-alt;
+    -fx-text-fill: -lt-text-body;
+}
+
+/* ------------------------------------------------------------------ stat tiles */
+
+/* Every stat number is off-white, whatever the status of the metric. */
+.stat-value,
+.stat-value-success,
+.stat-value-info,
+.stat-value-warning,
+.stat-value-danger {
+    -fx-text-fill: -lt-text;
+}
+
+/* ------------------------------------------------------------------ numbers */
+
+/*
+ * JavaFX 21 cannot switch OpenType features per node, so tabular figures come from the
+ * first installed UI face whose digits all share one advance width. Times, durations and
+ * counts use this class so their columns line up.
+ */
+.tabular,
+.hours-value,
+.cell-number {
+    -fx-font-family: "Segoe UI", "Helvetica Neue", "Arial", "DejaVu Sans", "Inter";
+}
+
+/* ------------------------------------------------------------------ lists / tables */
+
+.table-row-cell {
+    -fx-border-color: transparent transparent -lt-hairline transparent;
+}
+
+/* A 3px bar marks each schedule row: grey for fixed commitments, sage for study. */
+.table-row-cell.day-row-fixed {
+    /* border sides are top, right, bottom, left */
+    -fx-border-color: transparent transparent -lt-hairline -lt-row-fixed;
+    -fx-border-width: 0 0 1 3;
+}
+
+.table-row-cell.day-row-study {
+    -fx-border-color: transparent transparent -lt-hairline -lt-row-study;
+    -fx-border-width: 0 0 1 3;
+}
+
+.summary-row,
+.subtopic-row,
+.separator .line {
+    -fx-border-color: -lt-hairline;
+}
+
+/* ------------------------------------------------------------------ progress */
+
+.progress-bar > .track {
+    -fx-background-color: -lt-progress-track;
+}
+
+/* ------------------------------------------------------------------ calendar */
+
+.day-cell:hover {
+    -fx-border-color: -lt-muted;
+}
+
+/* Hover must not erase the ring on today or the selected day. */
+.day-cell-today:hover,
+.day-cell-selected:hover {
+    -fx-border-color: -lt-primary;
+}
+
+/* Selected day: sage ring on a raised fill, no tint. */
+.day-cell-selected {
+    -fx-background-color: -lt-surface-alt;
+    -fx-border-color: -lt-primary;
+}
+
+/* An exam day is a warning event, so it keeps the amber line rather than the sage accent. */
+.day-cell-exam {
+    -fx-border-color: -lt-warning;
+}
+
+/* ------------------------------------------------------------------ toast */
+
+/* A light source white would glare in dark mode; keep toasts on a raised surface. */
+.toast {
+    -fx-background-color: -lt-surface-alt;
+    -fx-border-color: -lt-border;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+}
+
+.toast .label {
+    -fx-text-fill: -lt-text;
+}
+
+.toast-success {
+    -fx-background-color: -lt-surface-alt;
+    -fx-border-color: -lt-success;
+}
+
+.toast-success .label {
+    -fx-text-fill: -lt-success;
+}
+
+.toast-warn {
+    -fx-background-color: -lt-surface-alt;
+    -fx-border-color: -lt-warning;
+}
+
+.toast-warn .label {
+    -fx-text-fill: -lt-warning;
+}
+
+.toast-danger {
+    -fx-background-color: -lt-surface-alt;
+    -fx-border-color: -lt-danger;
+}
+
+.toast-danger .label {
+    -fx-text-fill: -lt-danger;
+}
+
+.toast-info {
+    -fx-background-color: -lt-surface-alt;
+    -fx-border-color: -lt-info;
+}
+
+.toast-info .label {
+    -fx-text-fill: -lt-info;
+}
+
+/* ------------------------------------------------------------------ inputs / dialogs */
+
+/* Multiline inputs own their internal scroll pane and content backgrounds. */
+.text-area .scroll-pane,
+.text-area .scroll-pane .viewport,
+.text-area .content {
+    -fx-background-color: -lt-surface;
+}
+
+.text-area {
+    -fx-text-fill: -lt-text;
+}
+
+.dialog-pane,
+.dialog-pane > .header-panel {
+    -fx-background-color: -lt-surface;
+}
+
+.dialog-pane .label {
+    -fx-text-fill: -lt-text-body;
+}

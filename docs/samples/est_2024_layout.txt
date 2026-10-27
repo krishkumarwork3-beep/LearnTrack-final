@@ -1,0 +1,693 @@
+                   THAPAR INSTITUTE OF ENGINEERING & TECHNOLOGY, PATIALA
+                      (Deemed to be University) Patiala 147004 Punjab
+                                       India - 147004
+Date Sheet For Program BTech,BE,MA,BLAS,PhD,PhDP,MA1,ME,BEMBA,MCA,MTech,MSc and Semester 1
+
+Date Sheet Code: 2425ODDEST
+ Sl No. Date / Day      Time     Course No   Course Name
+
+ 1     02/12/2024       09:00    AH3401      HISTORY OF THE ANCIENT WORLD I: FROM STONE TO
+       Monday                                IRON
+                                 CV2302      INTRODUCTION TO VISUAL ARTS THROUGH AGES
+                                 MCA101      COMPUTER GRAPHICS
+                                 PBT110      MICROBIOLOGY
+                                 PBY105      RECOMBINANT DNA TECHNOLOGY
+                                 PCD103      MECHATRONICS
+                                 PCE102      ADVANCED SOLID MECHANICS
+                                 PCS111      SOFTWARE PROJECT MANAGEMENT
+                                 PCY101      ANALYTICAL CHEMISTRY
+                                 PES111      AIR QUALITY MODELLING AND CLIMATE CHANGE
+                                 PEV101      POWER CONVERTERS AND CONTROL
+                                 PMA107      REAL ANALYSIS
+                                 PMP105      RESEARCH METHODS STATISTICS AND ETHICAL
+                                             ISSUES IN PSYCHOLOGY
+                                 PPH101      CLASSICAL MECHANICS
+                                 PTE102      GEOMETRIC DESIGN OF TRANSPORTATION FACILITIES
+                                 PVL103      DIGITAL VLSI DESIGN
+                                 SP3403      PSYCHOLOGY AT WORKPLACE
+                                 TC2406      COMPUTER SYSTEM ORGANIZATION
+                                 UBM503      FOUNDATIONS OF ARTIFICIAL INTELLIGENCE
+                                 UCS413      NETWORK PROGRAMMING
+                                 UCT502      COMPILER DESIGN
+                                 UEC509      COMPUTER ARCHITECTURE
+                                 UEE512      POWER CONVERTERS AND DRIVES
+                                 UEI509      DIGITAL SYSTEMS
+ 2     02/12/2024       14:00    AH2403      POST-CLASSICAL WORLD HISTORY: C. 500 TO 1453
+       Monday                                CE
+                                 NM2407      ANALYSIS
+                                 PMP306      PSYCHOMETRICS AND PSYCHOLOGICAL ASSESSMENT
+                                 TM2401      BUSINESS STATISTICS AND DATA SCIENCE
+                                 UBM009      BIOENGINEERING THERMODYNAMICS
+                                 UBT307      MOLECULAR BIOLOGY
+                                 UBT702      INDUSTRIAL WASTE MANAGEMENT
+                                 UCC301      SOLID MECHANICS
+                                 UCE308      BUILDING MATERIALS
+                                 UCE702      ADVANCED CONSTRUCTION TECHNOLOGY
+                                 UCH404      CHEMICAL PROCESS INDUSTRIES
+                                 UCS405      DISCRETE MATHEMATICAL STRUCTURES
+                                 UCT303      OBJECT ORIENTED PROGRAMMING
+                                 UEC513      EMBEDDED SYSTEMS
+                                 UEC747      ANTENNA & WAVE PROPAGATION
+                                 UEE301      DIRECT CURRENT MACHINES AND TRANSFORMERS
+                                 UEE706      IOT AND REAL TIME SYSTEMS
+                                 UEI301      DIGITAL ELECTRONICS
+                                 UEI704      SOFT COMPUTING TECHNIQUES
+                                 ULC302      INTRODUCTION TO NETWORK THEORY
+                                 ULC701      SMART ELECTRIC GRID AND ENERGY MANAGEMENT
+                                 UME410      MECHATRONIC SYSTEMS
+                                 UME722      SYSTEM MODELLING AND SIMULATION
+
+
+                                                                           Page 1 of 12
+                   THAPAR INSTITUTE OF ENGINEERING & TECHNOLOGY, PATIALA
+                      (Deemed to be University) Patiala 147004 Punjab
+                                       India - 147004
+Date Sheet For Program BTech,BE,MA,BLAS,PhD,PhDP,MA1,ME,BEMBA,MCA,MTech,MSc and Semester 1
+
+Date Sheet Code: 2425ODDEST
+ Sl No. Date / Day      Time     Course No   Course Name
+
+ 2     02/12/2024       14:00    UMT308      THEORY OF MACHINES
+       Monday                    UNC302      OBJECT ORIENTED PROGRAMMING PRACTICES
+                                 UVD301      ELECTRONIC DEVICES FOR ICS
+ 3     03/12/2024       09:00    DCE102      CONTINUUM MECHANICS AND THEORY OF STRUCTURES
+       Tuesday                   DCE103      DESIGN, CONSTRUCTION AND EVALUATION OF
+                                             PAVEMENTS
+                                 DEC007      APPLIED RESEARCH IN ELECTRONICS
+                                 DEE001      COMPUTATIONAL TECHNIQUES FOR RESEARCH
+                                 DMC013      RESEARCH METHODOLOGY
+                                 DMC014      FIELD AND GALOIS THEORY
+                                 DPM003      THEORETICAL PHYSICS
+                                 DSS005      RESEARCH METHODOLOGY
+                                 NE3401      BIOMIMETICS AND SUSTAINABLE DESIGN
+                                 NP3403      THERMAL PHYSICS
+                                 PMP207      FOUNDATIONS OF I/O PSYCHOLOGY
+                                 SC3401      RELIGION AND SOCIETY
+                                 SE3404      DEVELOPMENT ECONOMICS
+                                 SP3407      LEARNING AND MEMORY
+                                 TC3302      COMPUTER NETWORKS
+                                 TS1212      PAST, PRESENT AND FUTURE
+                                 UBT601      ANIMAL BIOTECHNOLOGY
+                                 UCE512      DESIGN OF STEEL STRUCTURES
+                                 UCH501      CHEMICAL REACTION ENGINEERING-I
+                                 UCS534      COMPUTER & NETWORK SECURITY
+                                 UCS539      FINANCE ACCOUNTING AND VALUATION
+                                 UCS542      UI & UX SPECIALIST
+                                 UEE401      ALTERNATING CURRENT MACHINES
+                                 UEI501      CONTROL SYSTEMS
+                                 UEI508      SENSORS AND ACTUATORS
+                                 UHU042      BUSINESS COMMUNICATION & VALUE SCIENCE-III
+                                 UME509      MANUFACTURING TECHNOLOGY
+ 4     03/12/2024       14:00    AL2402      GENEALOGY OF CULTURAL STUDIES
+       Tuesday                   MCA308      DATA ANALYTICS AND VISUALIZATION
+                                 MCA310      CONTINUOUS INTEGRATION AND CONTINUOUS
+                                             DEPLOYMENT
+                                 NP2405      GENERAL PROPERTIES OF MATTER
+                                 NP4303      NON-LINEAR DYNAMICS
+                                 OP6211      ADVANCE EXCEL AND VBA FOR MANAGERS
+                                 PBT301      ANIMAL BIOTECHNOLOGY
+                                 PCY322      PHOTOPHYSICAL CHEMISTRY
+                                 PMC331      MACHINE LEARNING AND APPLICATIONS
+                                 PPH312      ADVANCED QUANTUM MECHANICS
+                                 SC2401      INTRODUCTION TO SOCIOLOGY
+                                 SO2409      INDIAN CONSTITUTION, GOVERNMENT AND POLITICS
+                                 SS1208      MIND & MACHINE
+                                 TC2301      DIGITAL LOGIC CIRCUITS
+                                 TM2402      MARKETING MANAGEMENT
+                                 TO4403      APPLIED COGNITIVE SCIENCE
+                                 UBT706      ENZYME TECHNOLOGY
+                                 UCC304      ARTIFICIAL INTELLIGENCE
+
+                                                                           Page 2 of 12
+                   THAPAR INSTITUTE OF ENGINEERING & TECHNOLOGY, PATIALA
+                      (Deemed to be University) Patiala 147004 Punjab
+                                       India - 147004
+Date Sheet For Program BTech,BE,MA,BLAS,PhD,PhDP,MA1,ME,BEMBA,MCA,MTech,MSc and Semester 1
+
+Date Sheet Code: 2425ODDEST
+ Sl No. Date / Day      Time     Course No   Course Name
+
+ 4     03/12/2024       14:00    UCH716      FOOD ENGINEERING AND SCIENCE
+       Tuesday                   UCT721      COGNITIVE SCIENCE & ANALYTICS
+                                 UCT723      CRYPTOLOGY
+                                 UEC533      COMPUTER AND COMMUNICATION NETWORKS
+                                 UEC735      BIG DATA ANALYTICS
+                                 UEI614      BIOMEDICAL SENSORS AND MEASUREMENT
+                                 UEI848      REAL TIME CONTROL SYSTEMS
+                                 UMA066      GRAPH THEORY AND APPLICATIONS
+                                 UMA301      DISCRETE MATHEMATICAL STRUCTURES
+                                 UMC743      QUANTITATIVE AND STATISTICAL METHODS FOR
+                                             FINANCE
+                                 UME724      AUTOMOTIVE MECHATRONICS SYSTEMS
+                                 UME726      IOT ENABLED AUTOMATIION AND MACHINE LEARNING
+                                 UME736      WELDING FOR INDUSTRY & ENGINEERS
+                                 UME831      COMPUTATIONAL FLUID DYNAMICS
+                                 UPE703      METAL FORMING
+ 5     04/12/2024       09:00    MCA105      DATA STRUCTURES
+       Wednesday                 PBY109      STRUCTURAL BIOLOGY AND PROTEIN ENGINEERING
+                                 PCD213      RAPID PROTOTYPING
+                                 PCE204      STRUCTURAL DYNAMICS
+                                 PES208      SOLID AND HAZARDOUS WASTE MANAGEMENT
+                                 PEV105      VEHICLE TO X TECHNOLOGY
+                                 PHU003      PROFESSIONAL COMMUNICATION
+                                 PMA111      COMPUTER PROGRAMMING
+                                 PMP103      DEVELOPMENTAL PSYCHOLOGY
+                                 PTE110      URBAN TRANSPORTATION INFRASTRUCTURE: PLANNING
+                                             AND DESIGN
+                                 PVL219      PHYSICAL DESIGN AUTOMATION
+                                 UME839      RENEWABLE ENERGY SYSTEMS
+                                 UNC501      OPERATING SYSTEMS
+ 6     04/12/2024       14:00    PMP301      PSYCHODIAGNOSTICS AND TREATMENT
+       Wednesday                 SE2403      ECONOMETRICS
+                                 UBT310      BIOCHEMISTRY-II
+                                 UBT704      TRENDS IN FOOD BIOTECHNOLOGY
+                                 UCS319      COMPUTER ARCHITECTURE AND ORGANIZATION
+                                 UCS510      COMPUTER ARCHITECTURE AND ORGANIZATION
+                                 UEE741      STOCHASTIC MODELING OF ELECTRICAL SYSTEMS
+                                 UNC303      COMPUTER AND COMMUNICATION NETWORKS
+ 7     05/12/2024       09:00    DPM001      MATERIALS CHARACTERIZATION AND MEASUREMENT
+       Thursday                              TECHNIQUES
+                                 MCA107      COMPUTER PROGRAMMMING (BRIDGE COURSE)
+                                 PCS108      ADVANCED DATA STRUCTURES
+                                 SP3401      PSYCHOLOGICAL ASSESSMENT
+                                 TM3401      SOCIAL AND COMMERCIAL ENTREPRENEURSHIP
+                                 UBT604      PHARMACEUTICAL TECHNOLOGY
+                                 UCE501      SOIL MECHANICS
+                                 UCH401      FLUID AND PARTICLE MECHANICS
+                                 UCT501      DESIGN AND ANALYSIS OF ALGORITHMS
+                                 UEC515      ANALOG AND DIGITAL CIRCUIT DESIGN
+                                 UEE502      HIGH VOLTAGE ENGINEERING
+
+
+                                                                           Page 3 of 12
+                   THAPAR INSTITUTE OF ENGINEERING & TECHNOLOGY, PATIALA
+                      (Deemed to be University) Patiala 147004 Punjab
+                                       India - 147004
+Date Sheet For Program BTech,BE,MA,BLAS,PhD,PhDP,MA1,ME,BEMBA,MCA,MTech,MSc and Semester 1
+
+Date Sheet Code: 2425ODDEST
+ Sl No. Date / Day      Time     Course No   Course Name
+
+ 7     05/12/2024       09:00    UEE511      EMBEDDED SYSTEM DESIGN AND IOT
+       Thursday                  UEI831      BIO-SENSOR AND MEMS
+                                 UME525      VEHICAL DYANAMICS
+ 8     05/12/2024       14:00    NE2401      ELEMENTS OF ENVIRONMENTAL SCIENCES
+       Thursday                  PBT303      BIOINFORMATICS
+                                 PMA303      PROBABILITY AND STATISTICS
+                                 SP2401      DEVELOPMENT OF PSYCHOLOGICAL THOUGHT
+                                 TC2403      DATA STRUCTURES AND ALGORITHM
+                                 TC4403      BIG DATA ANALYTICS
+                                 UBM008      BIOMATERIALS
+                                 UCE306      ARCHITECTURE DRAWING & BUILDING CONSTRUCTION
+                                 UCH305      CHEMICAL ENGINEERING THERMODYNAMICS-I
+                                 UCS301      DATA STRUCTURES
+                                 UCT302      COMPUTER ORGANIZATION & ARCHITECTURE
+                                 UCT702      IT WORKSHOP SKYLAB/MATLAB
+                                 UEC612      DIGITAL SYSTEM DESIGN
+                                 UEC734      QUANTUM COMPUTING
+                                 UEI407      SIGNALS AND SYSTEMS
+                                 ULC301      DATA STRUCTURES
+                                 UMA302      MATHEMATICS SIGNALS
+                                 UME310      MANUFACTURING TECHNOLOGY
+                                 UMT307      ANALOG AND DIGITAL CIRCUIT DESIGN
+                                 URA301      SMART MATERIALS FOR ROBOTICS
+ 9     07/12/2024       09:00    AH3405      EARLY INDIAN EPIGRAPHY
+       Saturday                  MCA102      DATA BASE MANAGEMENT SYSTEM
+                                 NP2402      COMPUTATIONAL METHODS
+                                 PBT113      BIOCHEMISTRY
+                                 PBY106      COMPUTATIONAL & SYSTEMS BIOLOGY
+                                 PCE101      ADVANCED STRUCTURAL ANALYSIS
+                                 PCY102      INORGANIC CHEMISTRY
+                                 PES116      ELEMENTS OF ENVIRONMENTAL SCIENCES
+                                 PEV102      SPECIAL ELECTRICAL MACHINES
+                                 PHU004      RESEARCH METHODOLOGY, ETHICS AND IPR
+                                 PMA108      ALGEBRA I
+                                 PMP101      HISTORY AND SYSTEMS OF PSYCHOLOGY
+                                 PPH103      QUANTUM MECHANICS
+                                 PTE101      PAVEMENT MATERIALS AND CONSTRUCTION PRACTICES
+                                 PVL108      DEVICE PHYSICS AND TECHNOLOGY
+                                 SC3403      SOCIOLOGY OF SCIENCE
+                                 SE2408      ADVANCED ECONOMETRICS
+                                 UBM504      FUNDAMENTALS OF SIGNALS AND SYSTEM
+                                 UCE511      TRANSPORTATION ENGINEERING - I
+                                 UCH503      INDUSTRIAL POLLUTION ABATEMENT
+                                 UCS503      SOFTWARE ENGINEERING
+                                 UEE504      POWER ELECTRONICS
+                                 UEI610      FUNDAMENTALS OF MICROPROCESSORS AND
+                                             MICROCONTROLLERS
+                                 UHU029      FUNDAMENTALS OF MANAGEMENT
+                                 UME805      ROBOTICS ENGINEERING
+                                 UNC504      ARTIFICIAL INTELLIGENCE
+                                                                           Page 4 of 12
+                   THAPAR INSTITUTE OF ENGINEERING & TECHNOLOGY, PATIALA
+                      (Deemed to be University) Patiala 147004 Punjab
+                                       India - 147004
+Date Sheet For Program BTech,BE,MA,BLAS,PhD,PhDP,MA1,ME,BEMBA,MCA,MTech,MSc and Semester 1
+
+Date Sheet Code: 2425ODDEST
+ Sl No. Date / Day      Time     Course No   Course Name
+
+ 10    07/12/2024       14:00    NE2403      SUSTAINABLE DEVELOPMENT: ISSUES AND
+       Saturday                              CHALLENGES
+                                 NM2405      LINEAR ALGEBRA
+                                 NP4302      ELECTRODYNAMICS
+                                 PBT304      PHARMACEUTICAL TECHNOLOGY
+                                 PCY302      SYMMETRY AND GROUP THEORY
+                                 PMA301      FUNCTIONAL ANALYSIS
+                                 PMP307      LEADERSHIP AND MOTIVATION IN ORGANIZATION
+                                 PMP308      COUNSELING INTERVENTIONS FOR SPECIAL
+                                             POPULATIONS
+                                 PPH301      PARTICLE PHYSICS
+                                 SE2402      PRINCIPLES OF MACROECONOMICS
+                                 TO2401      FOUNDATION IN COGNITIVE SCIENCE
+                                 TO4404      INTRODUCTION TO CONSCIOUSNESS
+                                 UBM024      FRESHMAN DESIGN INNOVATION-I
+                                 UBM701      MEDICAL IMAGE PROCESSING
+                                 UCC302      CIVIL ENGINEERING MATERIALS
+                                 UCY301      ANALYTICAL METHODS IN CHEMISTRY
+                                 UEE307      TRANSMISSION AND DISTRIBUTION OF ELECTRIC
+                                             POWER
+                                 UEI306      NETWORK ANALYSIS
+                                 UEI801      ADVANCED PROCESS CONTROL
+                                 UHU047      FINANCIAL MANAGEMENT
+                                 ULC303      COMPUTER ARCHITECTURE AND ORGANIZATION
+                                 ULC703      THEORY OF COMPUTATION
+                                 UMA035      OPTIMIZATION TECHNIQUES
+                                 UME517      MATERIALS ENGINEERING AND METALLURGY
+                                 UME856      TOTAL QUALITY MANAGEMENT
+                                 UPE705      COMPUTER AIDED MANUFACTURING
+                                 UPE834      COMPUTER AIDED MANUFACTURING
+                                 UPH012      BIOPHYSICS AND BIOMATERIALS
+                                 URA302      PYTHON PROGRAMMING
+ 11    09/12/2024       09:00    AH3407      INDIA'S MARITIME HISTORY: C. 1500-1800 CE
+       Monday                    MCA103      OPERATING SYSTEMS
+                                 NP3402      QUANTUM MECHANICS
+                                 PBT114      MOLECULAR BIOLOGY
+                                 PBY107      TRENDS IN FOOD TECHNOLOGY
+                                 PCD111      ROBOTICS
+                                 PCE103      ADVANCED STRUCTURAL DESIGN
+                                 PCY109      STEREOCHEMISTRY AND PHOTOCHEMISTRY
+                                 PES117      WASTEWATER TREATMENT TECHNOLOGIES
+                                 PEV103      BATTERY MANAGEMENT SYSTEMS
+                                 PMA109      ORDINARY DIFFERENTIAL EQUATIONS
+                                 PMP203      PSYCHOPATHOLOGY
+                                 PPH104      MATHEMATICAL PHYSICS
+                                 PTE104      ADVANCED FOUNDATION ENGINEERING
+                                 PVL203      VLSI SIGNAL PROCESSING
+                                 SC3413      ECONOMY, MARKET AND SOCIETY
+                                 SE3409      GAME THEORY AND ECONOMIC APPLICATIONS
+                                 SP3408      COGNITIVE NEUROSCIENCE
+
+
+                                                                           Page 5 of 12
+                   THAPAR INSTITUTE OF ENGINEERING & TECHNOLOGY, PATIALA
+                      (Deemed to be University) Patiala 147004 Punjab
+                                       India - 147004
+Date Sheet For Program BTech,BE,MA,BLAS,PhD,PhDP,MA1,ME,BEMBA,MCA,MTech,MSc and Semester 1
+
+Date Sheet Code: 2425ODDEST
+ Sl No. Date / Day      Time     Course No   Course Name
+
+ 11    09/12/2024       09:00    SS1210      CONFLICT
+       Monday                    TM3403      SUSTAINABILITY AND BUSINESS ETHICS.
+                                 UCS754      BLOCKCHAIN TECHNOLOGY AND APPLICATIONS
+                                 UCT512      CLOUD, MICROSERVICES AND APPLICATION
+ 12    09/12/2024       14:00    AH4402      ART AND ARCHITECTURE OF INDIA
+       Monday                    CC1201      THE WRITING WORKSHOP
+                                 MCA304      NATURAL LANGUAGE PROCESSING
+                                 MCA306      BUILD AND RELEASE MANAGEMENT
+                                 NP4301      ATOMIC AND MOLECULAR PHYSICS
+                                 PBT305      PLANT BIOTECHNOLOGY
+                                 PCY304      INTERPRETATIVE SPECTROSCOPY
+                                 PMA304      MATHEMATICAL PROGRAMMING
+                                 PPH303      SEMICONDUCTOR PHYSICS
+                                 SO2403      PUBLIC POLICY ANALYSIS
+                                 SP4401      INTRODUCTION TO GUIDANCE AND COUNSELLING
+                                 TM2201      BUSINESS COMMUNICATION
+                                 TO2404      BASICS OF MATHEMATICAL ANALYSIS
+                                 UBM031      ELECTRICAL CIRCUITS
+                                 UBM705      HOSPITAL ENGINEERING AND MANAGEMENT
+                                 UCE725      ADVANCED CONSTRUCTION MATERIALS AND
+                                             TECHNIQUES
+                                 UEC310      INFORMATION AND COMMUNICATION THEORY
+                                 UHU048      HUMAN RESOURCE MANAGEMENT
+                                 UME836      OPERATIONS MANAGEMENT
+                                 UTA018      OBJECT ORIENTED PROGRAMMING
+                                 UTD003      APTITUDE SKILLS BUILDING
+ 13    10/12/2024       09:00    PCS216      ADVANCED COMPUTER ARCHITECTURE
+       Tuesday                   SP3409      COUNSELLING SKILLS
+                                 UBT603      BIOPROCESS ENGINEERING
+                                 UCE401      HYDROLOGY AND GROUND WATER
+                                 UCS002      INTRODUCTION TO CYBER SECURITY
+                                 UCT513      MACHINE LEARNING
+                                 UEC514      SIGNALS, SYSTEMS AND THEIR PROCESSING
+                                 UEC716      DATABASE MANAGEMENT SYSTEMS
+                                 UEC750      MOS CIRCUIT DESIGN
+                                 UEE508      LINEAR CONTROL SYSTEMS
+                                 UEN006      TECHNOLOGIES FOR SUSTAINABLE DEVELOPMENT
+                                 UHU016      INTRODUCTORY COURSE IN FRENCH
+                                 UHU018      INTRODUCTION TO CORPORATE FINANCE
+                                 UMA069      GRAPH THEORY AND APPLICATIONS
+                                 UTD001      EMPLOYABILITY DEVELOPMENT SKILLS
+                                 UTD002      EMPLOYABILITY DEVELOPMENT SKILLS
+ 14    10/12/2024       14:00    PMP303      PSYCHOTHERAPEUTIC TECHNIQUES
+       Tuesday                   SC4401      SOCIOLOGICAL THEORIES
+                                 SE2401      PRINCIPLES OF MICROECONOMICS
+                                 TC4402      SOFT COMPUTING
+                                 TO3401      VISUAL COGNITION
+                                 UBM003      FUNDAMENTALS OF LIFE SCIENCE
+                                 UBT309      IMMUNOTECHNOLOGY
+                                 UCT301      FORMAL LANGUAGE AND AUTOMATA THEORY
+                                                                           Page 6 of 12
+                   THAPAR INSTITUTE OF ENGINEERING & TECHNOLOGY, PATIALA
+                      (Deemed to be University) Patiala 147004 Punjab
+                                       India - 147004
+Date Sheet For Program BTech,BE,MA,BLAS,PhD,PhDP,MA1,ME,BEMBA,MCA,MTech,MSc and Semester 1
+
+Date Sheet Code: 2425ODDEST
+ Sl No. Date / Day      Time     Course No   Course Name
+
+ 14    10/12/2024       14:00    UCT701      USABILITY DESIGN OF SOFTWARE APPLICATIONS
+       Tuesday                   UEC642      DEEP LEARNING AND APPLICATIONS
+ 15    11/12/2024       09:00    PCD202      COMPUTER AIDED DESIGN
+       Wednesday                 PMP107      GUIDANCE AND COUNSELING
+                                 TC2404      ARTIFICIAL INTELLIGENCE
+                                 UBT513      CELL AND TISSUE ENGINEERING
+                                 UCS531      CLOUD COMPUTING
+                                 UCS541      FOUNDATION OF ARTIFICIAL INTELLIGENCE
+ 16    11/12/2024       14:00    AH2402      MODERN INDIA I: 1770 TO 1905 CE
+       Wednesday                 PBT312      MOLECULAR FARMING
+                                 PBT314      MEDICAL BIOTECHNOLOGY
+                                 PBT315      PROTEIN ENGINEERING
+                                 SP2416      EXPERIMENTAL METHODS
+                                 SP4402      INTRODUCTION TO POSITIVE PSYCHOLOGY
+                                 UCE310      FLUID MECHANICS
+                                 UCH301      MATERIAL AND ENERGY BALANCES
+                                 UCS802      COMPILER CONSTRUCTION
+                                 UEC301      ANALOG ELECTRONIC CIRCUITS
+                                 UME309      ENGINEERING FLUID MECHANICS
+                                 UME853      SOLAR ENERGY ENGINEERING
+                                 UMT306      SIGNAL CONDITIONING AND DATA ACQUISITION
+                                 UMT404      DATA STRUCTURES
+ 17    12/12/2024       09:00    AL3402      READING POPULAR CULTURE
+       Thursday                  PCS110      DATA SCIENCE FOUNDATIONS
+                                 UBT605      PLANT BIOTECHNOLOGY
+                                 UEC512      LINEAR INTEGRATED CIRCUITS AND APPLICATIONS
+                                 UEE525      DATA ANALYTICAL METHODS
+                                 UEE526      EMBEDDED SYSTEM DESIGN
+                                 UEI608      BIO-MEDICAL INSTRUMENTATION
+                                 UME511      AUTOMOBILE ENGINEERING
+                                 UML501      MACHINE LEARNING
+ 18    12/12/2024       14:00    SP2417      RESEARCH METHODS
+       Thursday                  TC2402      INTRODUCTION TO PYTHON
+                                 UBT308      FOOD SCIENCE AND NUTRITION
+                                 UCS744      AUTONOMOUS SYSTEMS
+                                 UEC715      IOT BASED SYSTEMS
+                                 UEE505      ANALOG AND DIGITAL SYSTEMS
+                                 UES301      ANALOG CIRCUITS
+ 19    13/12/2024       09:00    UCS551      CONVERSATIONAL AI: ACCELERATED DATA SCIENCE
+       Friday                    UMA021      NUMERICAL LINEAR ALGEBRA
+ 20    13/12/2024       14:00    AH2401      ANCIENT INDIA I: FROM PALAEOLITHIC TO POST-
+       Friday                                MAURYAN
+                                 PMP305      POSITIVE PSYCHOLOGY AND WELL BEING
+                                 TA2402      INTRODUCTION TO ARTIFICIAL INTELLIGENCE
+                                 UCS704      EMBEDDED SYSTEMS DESIGN
+                                 UCS712      COGNITIVE COMPUTING
+                                 UEC311      CIRCUIT ANALYSIS AND SYNTHESIS
+                                 UEC719      5G WIRELESS COMMUNICATION
+                                 UEE705      SUSTAINABLE ENERGY SYSTEMS
+ 21    14/12/2024       09:00    DSS011      RESEARCH AND PUBLICATION ETHICS
+                                                                           Page 7 of 12
+                   THAPAR INSTITUTE OF ENGINEERING & TECHNOLOGY, PATIALA
+                      (Deemed to be University) Patiala 147004 Punjab
+                                       India - 147004
+Date Sheet For Program BTech,BE,MA,BLAS,PhD,PhDP,MA1,ME,BEMBA,MCA,MTech,MSc and Semester 1
+
+Date Sheet Code: 2425ODDEST
+ Sl No. Date / Day      Time     Course No   Course Name
+
+ 21    14/12/2024       09:00    MCA106      PRACTICAL COMPUTING
+       Saturday                  NE3406      SMART CITIES AND URBAN PLANNING
+                                 NM3402      NUMERICAL ANALYSIS
+                                 NP3501      ELECTRICITY AND MAGNETISM
+                                 PCL108      STATISTICAL METHODS AND ALGORITHMS
+                                 PEV106      DEEP LEARNING FOR ELECTRIC VEHICLES
+                                 PIM101      BASIC MATHEMATICS
+                                 PMA102      RESEARCH METHODOLOGY
+                                 PMC105      DISCRETE MATHEMATICAL STRUCTURE
+                                 PMP106      EXPERIMENTAL AND COGNTIVE PSYCHOLOGY
+                                 PPH109      COMPUTATIONAL METHODS IN PHYSICS
+                                 PVL220      CAD FOR VLSI DESIGN
+                                 SC3402      SOCIOLOGY OF MEDIA
+                                 SE3407      LABOR ECONOMICS
+                                 SO3402      PEACE AND CONFLICT RESOLUTION
+                                 TO3413      PERCEPTION
+                                 TS1213      SELF
+                                 UBM605      DATA STRUCTURE AND ALGORITHMS
+                                 UBT512      STRUCTURAL BIOLOGY
+                                 UCE507      ADVANCED STRUCTURAL ANALYSIS
+                                 UCE851      DESIGN OF SMART TRANSPORTATION SYSTEMS
+                                 UCE861      INFRASTRUCTURE PLANNING & DESIGN
+                                 UCH506      PROCESS INSTRUMENTATION AND CONTROL
+                                 UCS417      INTRODUCTION TO OPERATING SYSTEMS
+                                 UCS532      COMPUTER VISION
+                                 UCS537      SOURCE CODE MANAGEMENT
+                                 UCS547      EDGE AI AND ROBOTICS: ACCELERATED DATA
+                                             SCIENCE
+                                 UCS548      FOUNDATIONS OF DATA SCIENCE
+                                 UCS550      NETWORK DEFENCE
+                                 UEC518      NETWORK SECURITY
+                                 UEC520      MACHINE LEARNING
+                                 UEC521      DESIGN USING SYSTEM VERILOG
+                                 UEC522      DATA COMMUNICATION
+                                 UEC538      ALGORITHM ANALYSIS AND DESIGN
+                                 UEE304      TRANSMISSION AND DISTRIBUTION OF ELECTRIC
+                                             POWER
+                                 UEI514      IOT BASED SYSTEMS
+                                 UEI601      INDUSTRIAL INSTRUMENTATION
+                                 UEI851      INDUSTRIAL INSTRUMENTATION
+                                 UHU026      BEHAVIOURAL ECONOMICS
+                                 UHU028      INDUSTRIAL PSYCHOLOGY
+                                 UMC512      MATHEMATIC MODELING AND SIMULATION
+                                 UME718      APPLIED THERMODYNAMICS
+                                 UNC514      DATA SCIENCE FUNDAMENTALS
+                                 UNC515      OPERATING SYSTEMS
+ 22    14/12/2024       14:00    AH4404      RESEARCH IN HISTORY
+       Saturday                  MCA303      IT PROJECT MANAGEMENT
+                                 NE4404      ENVIRONMENTAL CHEMISTRY
+                                 NP2406      WAVES AND OSCILLATIONS
+
+                                                                           Page 8 of 12
+                   THAPAR INSTITUTE OF ENGINEERING & TECHNOLOGY, PATIALA
+                      (Deemed to be University) Patiala 147004 Punjab
+                                       India - 147004
+Date Sheet For Program BTech,BE,MA,BLAS,PhD,PhDP,MA1,ME,BEMBA,MCA,MTech,MSc and Semester 1
+
+Date Sheet Code: 2425ODDEST
+ Sl No. Date / Day      Time     Course No   Course Name
+
+ 22    14/12/2024       14:00    NP4304      PHYSICS BY NUMERICAL ANALYSIS
+       Saturday                  PCY108      CHEMICAL BIOLOGY
+                                 PCY326      COMPUTATIONAL CHEMISTRY
+                                 PHU301      ENTREPRENEURSHIP AND IPR
+                                 PMC303      COMPUTER NETWORKS
+                                 PPH449      STRUCTURE AND PROPERTIES OF MATERIALS
+                                 SC2411      STRATIFICATION, INEQUALITY & HIERARCHY
+                                 SC4406      SOCIOLOGICAL RESEARCH DESIGN
+                                 SO2410      GENDER AND POLITICS
+                                 TC2411      DISCRETE MATHEMATICS
+                                 TM2403      PRINCIPLES OF ACCOUNTING
+                                 TS1204      CREATIVE WORKSHOP 1
+                                 UCE312      SOLID MECHANICS
+                                 UCH725      ADVANCED SEPARATION PROCESSES
+                                 UCS317      DATA STRUCTURES (WITH JAVA)
+                                 UCS318      SOFTWARE ENGINEERING
+                                 UCS414      COMPUTER NETWORKS
+                                 UCS745      CLOUD & DEVOPS
+                                 UCS749      CONVERSATIONAL AI: SPEECH PROCESSING AND
+                                             SYNTHESIS
+                                 UCS750      COMPUTER HACKING AND FORENSIC INVESTIGATION
+                                 UCS751      SIMULATION AND MODELLING
+                                 UCS752      AUGMENTED AND VIRTUAL REALITY
+                                 UCS753      DEEP LEARNING AND COMPUTER VISION
+                                 UCS758      SYSTEM PROVISIONING AND CONFIGURATION
+                                             MANAGEMENT
+                                 UCS761      DEEP LEARNING
+                                 UCT305      SOFTWARE ENGINEERING
+                                 UCT732      ADVANCED SOCIAL, TEXT AND MEDIA ANALYTICS
+                                 UEC630      DEEP LEARNING AND APPLICATIONS
+                                 UEC751      DSP PROCESSORS
+                                 UEC752      IC FABRICATION TECHNOLOGY
+                                 UEC812      WIRELESS SENSOR NETWORKS
+                                 UEC823      SOFT COMPUTING
+                                 UEE742      DIGITAL CONTROLLERS FOR POWER APPLICATIONS
+                                 UEE743      CLOUD COMPUTING BASED ELECTRICAL SYSTEMS
+                                 UEI742      SMART SENSOR NETWORKS
+                                 UES004      THERMODYNAMICS
+                                 UES017      SOLIDS AND STRUCTURES
+                                 UES018      MANUFACTURING TECHNIQUES
+                                 UES302      INTRODUCTION TO MEASUREMENT SYSTEMS
+                                 ULC662      CHARGING INFRASTRUCTURE
+                                 ULC663      CYBER PHYSICAL SYSTEMS
+                                 UMA303      OPTIMIZATION TECHNIQUES IN CIVIL ENGINEERING
+                                 UMC742      COMPUTATIONAL NUMBER THEORY
+                                 UME311      THERMODYNAMICS
+                                 UME859      IOT AND MACHINE LEARNING IN ROBOTICS
+                                 UMT305      APPLIED THERMAL AND FLUID ENGINEERING
+                                 UNC304      DISCRETE MATHEMATICS
+ 23    16/12/2024       09:00    SP3402      APPLIED SOCIAL PSYCHOLOGY
+
+                                                                           Page 9 of 12
+                   THAPAR INSTITUTE OF ENGINEERING & TECHNOLOGY, PATIALA
+                      (Deemed to be University) Patiala 147004 Punjab
+                                       India - 147004
+Date Sheet For Program BTech,BE,MA,BLAS,PhD,PhDP,MA1,ME,BEMBA,MCA,MTech,MSc and Semester 1
+
+Date Sheet Code: 2425ODDEST
+ Sl No. Date / Day      Time     Course No   Course Name
+
+ 23    16/12/2024       09:00    UCT101      DISCRETE MATHEMATICS
+       Monday                    UEC001      ELECTRONIC ENGINEERING
+                                 UEC502      DIGITAL SIGNAL PROCESSING
+                                 UEE509      POWER SYSTEM ANALYSIS
+                                 UES013      ELECTRICAL & ELECTRONIC ENGINEERING
+                                 UMA004      MATHEMATICS - II
+                                 UMA005      INTRODUCTORY MATHEMATICS-I
+                                 UMA023      DIFFERENTIAL EQUATIONS AND LINEAR ALGEBRA
+                                 UME408      MACHINE DESIGN-I
+                                 UPH010      PHYSICS WITH CALCULUS -I
+ 24    16/12/2024       14:00    PC1302      AVANI 2: DESIGN A SOLUTION
+       Monday                    UCH302      PROCESS FLUID MECHANICS
+                                 UCT703      IT PROJECT MANAGEMENT
+                                 UES009      MECHANICS
+                                 UES034      MEASUREMENT SCIENCE AND TECHNIQUES
+                                 UES035      MEASUREMENT SCIENCE AND TECHNIQUES
+                                 UHU005      HUMANITIES FOR ENGINEERS
+ 25    17/12/2024       09:00    UCS410      PROBABILITY AND STATISTICS
+       Tuesday                   UEC519      ANALOG AND DIGITAL COMMUNICATION SYSTEMS
+                                 UEC639      DIGITAL COMMUNICATION
+                                 UEI607      DIGITAL SIGNAL PROCESSING AND APPLICATIONS
+                                 ULC402      FUNDAMENTALS OF SIGNAL PROCESSING
+                                 UMA401      PROBABILITY AND STATISTICS
+ 26    17/12/2024       14:00    UEC714      FIBER OPTIC COMMUNICATION
+       Tuesday                   UMA011      NUMERICAL ANALYSIS
+ 27    18/12/2024       09:00    AH3402      MEDIEVAL INDIA I: 1206 TO 1526 CE
+       Wednesday                 DCB003      ADVANCED INSTRUMENTATION TECHNIQUES
+                                 DMC007      RESEARCH METHODOLOGY
+                                 DSS003      GLOBAL MARKETING AND E-BUSINESS
+                                 DSS006      FINANCIAL ANALYSIS
+                                 DSS007      STRATEGIC HR IN GLOBAL ENVIRONMENT
+                                 DSS016      ECONOMETRICS
+                                 DSS017      APPLIED PSYCHOLOGY
+                                 DSS018      ADVANCED POLITICAL THOUGHT
+                                 MCA104      COMPUTER NETWORKS
+                                 PBT115      BIO-TECHNIQUES
+                                 PBY108      FERMENTATION & BIO-SEPARATION TECHNOLOGY
+                                 PCE104      STRUCTURAL MATERIALS
+                                 PCH106      REACTION ENGINEERING & REACTOR ANALYSIS
+                                 PCS112      APPLIED STATISTICAL METHODS
+                                 PCY110      THERMODYNAMICS AND CHEMICAL KINETICS
+                                 PES118      REMOTE SENSING AND GIS: PRINCIPLES AND
+                                             APPLICATIONS
+                                 PEV104      EV MODELING AND SIMULATION
+                                 PMA110      MECHANICS
+                                 PPH108      DIGITAL SYSTEMS AND MICROPROCESSORS
+                                 PTE105      TRAFFIC ANALYSIS & DESIGN
+                                 PVL204      FPGA BASED SYSTEM DESIGN
+                                 SS1403      HUMAN BEHAVIOUR
+                                 UBM505      INTRODUCTION TO ANALOG CIRCUITS AND DEVICES
+                                                                          Page 10 of 12
+                   THAPAR INSTITUTE OF ENGINEERING & TECHNOLOGY, PATIALA
+                      (Deemed to be University) Patiala 147004 Punjab
+                                       India - 147004
+Date Sheet For Program BTech,BE,MA,BLAS,PhD,PhDP,MA1,ME,BEMBA,MCA,MTech,MSc and Semester 1
+
+Date Sheet Code: 2425ODDEST
+ Sl No. Date / Day      Time     Course No   Course Name
+
+ 27    18/12/2024       09:00    UCH405      ENERGY RESOURCES
+       Wednesday                 UES102      MANUFACTURING PROCESSES
+                                 UHU030      BUSINESS STRATEGY
+                                 UMA010      MATHEMATICS I
+                                 UMA015      CALCULUS-I
+                                 UMA022      CALCULUS FOR ENGINEERS
+                                 UME524      ADDITIVE MANUFACTURING
+                                 UPH014      PHYSICS FOR COMPUTING SCIENCE
+                                 UTA026      MANUFACTURING PROCESSES
+ 28    18/12/2024       14:00    AH2404      MODERN WORLD I: 1775 TO 1914
+       Wednesday                 MCA302      OBJECT ORIENTED PROGRAMMING
+                                 NP1201      STATISTICS & PROBABILITY
+                                 NP2404      MATHEMATICAL PHYSICS 1
+                                 PCY307      CATALYSIS AND REAGENTS
+                                 PMC206      OPERATING SYSTEMS
+                                 PPH308      INSTRUMENTATION AND EXPERIMENT DESIGN
+                                 SE2404      MATHEMATICS FOR ECONOMICS
+                                 SP2402      INTRODUCTION TO SOCIAL PSYCHOLOGY
+                                 TA2401      MATHEMATICAL FOUNDATIONS FOR DATA
+                                 TM2409      BUSINESS ECONOMICS
+                                 TM4402      BUSINESS MODELS & FRAMEWORKS
+                                 TO4402      METHODS IN COGNITIVE SCIENCE
+                                 UCC303      FLUID MECHANICS
+                                 UCS303      OPERATING SYSTEMS
+                                 UCS312      DATABASE MANAGEMENT SYSTEMS
+                                 UCS760      EDGE AI AND ROBOTICS: REINFORCEMENT LEARNING
+                                 UCS856      COMPUTER VISION AND AUGMENTED REALITY
+                                 UCT304      COMPUTATIONAL STATISTICS
+                                 UEI408      ANALOG DEVICES AND CIRCUITS
+                                 UEI712      SOFTWARE ENGINEERING
+                                 UEI725      OPERATING SYSTEM
+                                 UEI733      EMBEDDED SYSTEM DESIGN
+                                 UES012      ENGINEERING MATERIALS
+                                 UHU049      SERVICES SCIENCE & SERVICE OPERATIONAL
+                                             MANAGEMENT
+                                 UMA017      DIFFERENTIAL EQUATION
+                                 UMA028      MATHEMATICS FOR DATA SCIENCE
+                                 UMA034      OPTIMIZATION METHODS
+                                 UME858      ELECTRIC AND HYBRID VEHICLES
+                                 UVD302      SEMICONDUCTOR MATERIALS SYNTHESIS AND
+                                             CHARACTERIZATIONS
+ 29    20/12/2024       09:00    UCB008      APPLIED CHEMISTRY
+       Friday                    UCB009      CHEMISTRY
+                                 UCB028      GENERAL CHEMISTRY-I
+                                 UCM004      DATA STRUCTURE & ALGORITHMS
+                                 UCM008      MACHINE LEARNING
+                                 UEE002      PRINCIPLES OF ELECTRICAL ENGINEERING
+                                 UES101      ENGINEERING DRAWING
+                                 UTA015      ENGINEERING DRAWING
+ 30    20/12/2024       11:30    UTA021      ENGINEERING DRAWING
+
+                                                                          Page 11 of 12
+                   THAPAR INSTITUTE OF ENGINEERING & TECHNOLOGY, PATIALA
+                      (Deemed to be University) Patiala 147004 Punjab
+                                       India - 147004
+Date Sheet For Program BTech,BE,MA,BLAS,PhD,PhDP,MA1,ME,BEMBA,MCA,MTech,MSc and Semester 1
+
+Date Sheet Code: 2425ODDEST
+ Sl No. Date / Day      Time     Course No   Course Name
+
+ 30    20/12/2024       11:30
+       Friday
+ 31    20/12/2024       14:00    UTA029      ENGINEERING DRAWING
+       Friday
+ 32    23/12/2024       09:00    UCM002      OPERATING SYSTEMS
+       Monday                    UCM009      DESIGN AND ANALYSIS OF ALGORITHMS
+                                 UCS102      ARTIFICIAL INTELLIGENCE
+                                 UCT102      PROBABILITY & STATISTICS
+                                 UHU003      PROFESSIONAL COMMUNICATION
+ 33    26/12/2024       09:00    UBM001      INTRODUCTION TO BIOENGINEERING APPLICATIONS
+       Thursday                  UCT104      FUNDAMENTALS OF COMPUTER SCIENCE
+                                 UEN002      ENERGY AND ENVIRONMENT
+                                 UEN008      ENERGY AND ENVIRONMENT
+                                 UPH004      APPLIED PHYSICS
+                                 UPH013      PHYSICS
+ 34    28/12/2024       09:00    UBT008      CELL BIOLOGY AND GENETICS
+       Saturday                  UES103      PROGRAMMING FOR PROBLEM SOLVING
+                                 UHU011      BUSINESS COMMUNICATION & VALUE SCIENCE-I
+                                 UTA003      COMPUTER PROGRAMMING
+                                 UTA007      COMPUTER PROGRAMMING - I
+
+
+
+
+                                                                          Page 12 of 12
+

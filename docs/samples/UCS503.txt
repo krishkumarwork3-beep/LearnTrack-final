@@ -1,0 +1,38 @@
+UCS503: SOFTWARE ENGINEERING
+
+L T P Cr
+3 1 0 4
+
+Course Objectives:
+To understand software development life cycle and various process models.
+To learn software project management and quality assurance techniques.
+To apply software engineering principles in real-world projects.
+
+Introduction to Software Engineering: Software Crisis: Problems and Causes, Software process models - Waterfall, Incremental, Evolutionary models, Agile methodologies (Scrum, XP), DevOps practices
+
+Requirements Engineering: Problem Analysis, Requirements elicitation techniques, Functional and non-functional requirements, Requirements specification (SRS document), Requirements validation and management, Use case modeling, User stories
+
+Software Design: Design principles and concepts, Modularity and abstraction, Coupling and cohesion, Architectural patterns (MVC, Layered, Microservices), Design patterns (Creational, Structural, Behavioral), UML diagrams (class, sequence, activity), Database design and normalization
+
+Software Testing: Testing fundamentals, Unit testing and test-driven development (TDD), Integration testing strategies, System and acceptance testing, Black-box and white-box testing, Regression testing, Test automation frameworks, Performance and security testing
+
+Software Project Management: Project planning and estimation, Work Breakdown Structure (WBS), COCOMO model, Risk management, Software configuration management, Version control systems (Git), Continuous Integration/Continuous Deployment (CI/CD), Team collaboration tools
+
+Software Quality and Maintenance: Software quality attributes, Quality assurance vs quality control, Software metrics and measurement, Code reviews and inspections, Software maintenance types (corrective, adaptive, perfective), Refactoring techniques, Technical debt management
+
+Agile Software Development: Agile manifesto and principles, Scrum framework (sprints, roles, artifacts), Twelve Practices of eXtreme Programming (XP), Kanban methodology, User story mapping, Sprint planning and retrospectives
+
+Course Learning Outcomes:
+Students will be able to:
+1. Apply software engineering principles to develop quality software
+2. Manage software projects effectively using modern methodologies
+3. Perform testing and quality assurance activities
+
+Text Books:
+1. "Software Engineering" by Ian Sommerville
+2. "Software Engineering: A Practitioner's Approach" by Roger Pressman
+
+Reference Books:
+1. "The Mythical Man-Month" by Frederick Brooks
+2. "Clean Code" by Robert Martin
+3. "Agile Software Development" by Alistair Cockburn

@@ -1,0 +1,1666 @@
+/*
+ * LearnTrack design system.
+ *
+ * Light theme tokens live on .root; learntrack-dark.css only overrides the same tokens.
+ * Everything below is built from those tokens, so both themes stay in step.
+ *
+ * Spacing scale (px): 4, 8, 16, 24, 32, 48. Radii: 4 for controls, 8 for cards.
+ * Type scale: 24 page title, 16 section title, 13 body, 11 to 12 caption.
+ */
+
+.root {
+    /* surfaces */
+    -lt-bg: #f6f5f2;
+    -lt-surface: #ffffff;
+    -lt-surface-alt: #faf9f6;
+    -lt-surface-sunken: #efede8;
+
+    /* lines */
+    -lt-border: #e4e1da;
+    -lt-border-strong: #cfcbc2;
+
+    /* text */
+    -lt-text: #1c1b1a;
+    -lt-text-body: #33312d;
+    -lt-muted: #6b6862;
+    -lt-faint: #6f6b64;
+    -lt-on-accent: #ffffff;
+
+    /* ink and one warm accent, used sparingly */
+    -lt-primary: #1e3a5f;
+    -lt-primary-hover: #162b47;
+    -lt-primary-soft: #e8ecf1;
+    -lt-accent: #b45309;
+    -lt-accent-soft: #fbf0e3;
+
+    /* semantic colours, muted on purpose */
+    -lt-success: #2f7d5b;
+    -lt-success-soft: #eef5f1;
+    -lt-warning: #a16207;
+    -lt-warning-soft: #fbf6ea;
+    -lt-warning-border: #d9a441;
+    -lt-danger: #b4412f;
+    -lt-danger-soft: #f8e9e6;
+    -lt-danger-border: #d9a08f;
+    -lt-info: #2f5d7c;
+    -lt-info-soft: #e9f0f4;
+    -lt-violet: #6b5b8f;
+    -lt-violet-soft: #eeebf3;
+
+    /* calendar tints */
+    -lt-cal-study: #f2f0ea;
+    -lt-cal-study-border: #b9b3a5;
+    -lt-cal-done: #e7f1eb;
+    -lt-cal-done-border: #2f7d5b;
+    -lt-cal-eve: #f8f1df;
+    -lt-cal-eve-border: #d9a441;
+    -lt-cal-exam: #fbf0e3;
+    -lt-cal-window: #f8f1df;
+
+    -fx-background-color: -lt-bg;
+    -fx-font-family: "Inter";
+    -fx-font-size: 13px;
+    -fx-text-fill: -lt-text-body;
+}
+
+/*
+ * Baseline control colours. These sit before the component rules on purpose: JavaFX
+ * resolves equal-specificity rules by document order, so the more specific classes
+ * further down still win. Without them labels, radio buttons, check boxes and titled
+ * panes keep Modena's near-black text, which is unreadable on the dark palette.
+ */
+
+.label {
+    -fx-text-fill: -lt-text-body;
+}
+
+.radio-button,
+.check-box,
+.toggle-button {
+    -fx-text-fill: -lt-text-body;
+    -fx-font-size: 13px;
+}
+
+.radio-button .text,
+.check-box .text,
+.toggle-button .text {
+    -fx-fill: -lt-text-body;
+}
+
+.radio-button .dot {
+    -fx-background-color: -lt-primary;
+}
+
+.titled-pane > .title {
+    -fx-background-color: -lt-surface-alt;
+    -fx-border-color: -lt-border;
+}
+
+.titled-pane > .title > .text {
+    -fx-fill: -lt-text;
+}
+
+.titled-pane > .content {
+    -fx-background-color: -lt-surface;
+    -fx-border-color: -lt-border;
+}
+
+.scroll-pane,
+.scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+.list-view,
+.list-cell,
+.table-view,
+.table-cell {
+    -fx-text-fill: -lt-text-body;
+}
+
+/* ------------------------------------------------------------------ layout */
+
+.page {
+    -fx-padding: 24;
+    -fx-spacing: 16;
+}
+
+/* A page that lives inside a scroll pane owns its own padding. */
+.page-scroll {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.page-header {
+    -fx-spacing: 4;
+    -fx-alignment: center-left;
+}
+
+.page-header-row {
+    -fx-spacing: 16;
+    -fx-alignment: center-left;
+}
+
+.page-title {
+    -fx-font-family: "Inter";
+    -fx-font-size: 24px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -lt-text;
+}
+
+.page-description {
+    -fx-font-size: 13px;
+    -fx-text-fill: -lt-muted;
+    -fx-wrap-text: true;
+}
+
+.section-title {
+    -fx-font-family: "Inter";
+    -fx-font-size: 16px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -lt-text;
+}
+
+.subtle {
+    -fx-text-fill: -lt-muted;
+    -fx-font-size: 13px;
+}
+
+.hint {
+    -fx-text-fill: -lt-muted;
+    -fx-font-size: 11px;
+}
+
+.caption {
+    -fx-text-fill: -lt-muted;
+    -fx-font-size: 11px;
+    -fx-font-weight: 500;
+}
+
+.text-danger {
+    -fx-text-fill: -lt-danger;
+}
+
+.text-success {
+    -fx-text-fill: -lt-success;
+}
+
+.text-muted {
+    -fx-text-fill: -lt-muted;
+}
+
+.status-caption {
+    -fx-font-size: 11px;
+    -fx-text-fill: -lt-muted;
+}
+
+/* Forms keep a readable measure even on wide windows. */
+.content-narrow {
+    -fx-max-width: 960;
+}
+
+.feasibility-compact {
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+    -fx-max-width: 460;
+}
+
+.paste-area {
+    -fx-font-family: "Consolas", "Menlo", monospace;
+}
+
+/* ------------------------------------------------------------------ cards */
+
+/* One surface level: hairline border, 8px radius, never a drop shadow, never nested. */
+.card {
+    -fx-background-color: -lt-surface;
+    -fx-background-radius: 8;
+    -fx-border-color: -lt-border;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+    -fx-padding: 16;
+    -fx-spacing: 16;
+}
+
+/* Flat grouping inside a card: tinted background only, so cards are never nested. */
+.card-flat {
+    -fx-background-color: -lt-surface-alt;
+    -fx-background-radius: 8;
+    -fx-padding: 16;
+    -fx-spacing: 8;
+}
+
+.card-header {
+    -fx-spacing: 8;
+    -fx-alignment: center-left;
+}
+
+.divider {
+    -fx-padding: 0;
+}
+
+.separator .line {
+    -fx-border-color: -lt-border;
+    -fx-border-width: 1 0 0 0;
+}
+
+/* ------------------------------------------------------------------ app bar */
+
+.app-bar {
+    -fx-background-color: -lt-surface;
+    -fx-padding: 16 24 0 24;
+    -fx-spacing: 8;
+    -fx-alignment: center-left;
+}
+
+.wordmark {
+    -fx-font-family: "Inter";
+    -fx-font-size: 16px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -lt-text;
+}
+
+.app-bar-caption {
+    -fx-font-size: 11px;
+    -fx-text-fill: -lt-muted;
+}
+
+/* ------------------------------------------------------------------ buttons */
+
+.button {
+    -fx-background-color: -lt-surface;
+    -fx-background-radius: 4;
+    -fx-border-color: -lt-border-strong;
+    -fx-border-radius: 4;
+    -fx-border-width: 1;
+    -fx-text-fill: -lt-text;
+    -fx-font-family: "Inter";
+    -fx-font-size: 13px;
+    -fx-padding: 4 14;
+    -fx-min-height: 32;
+    -fx-pref-height: 32;
+    -fx-cursor: hand;
+}
+
+.button:hover {
+    -fx-background-color: -lt-surface-sunken;
+}
+
+.button:pressed {
+    -fx-background-color: -lt-border;
+}
+
+.button:focused {
+    -fx-border-color: -lt-primary;
+    -fx-border-width: 2;
+}
+
+.button:disabled {
+    -fx-opacity: 0.4;
+}
+
+.btn-primary {
+    -fx-background-color: -lt-primary;
+    -fx-border-color: transparent;
+    -fx-text-fill: -lt-on-accent;
+    -fx-font-weight: 600;
+}
+
+.btn-primary:hover {
+    -fx-background-color: -lt-primary-hover;
+}
+
+.btn-primary:pressed {
+    -fx-background-color: -lt-text;
+}
+
+.btn-secondary {
+    -fx-background-color: -lt-surface;
+    -fx-border-color: -lt-border-strong;
+    -fx-text-fill: -lt-text;
+}
+
+.btn-secondary:hover {
+    -fx-background-color: -lt-surface-sunken;
+}
+
+/* Destructive action on a page: outlined in danger, fills only while hovered. */
+.btn-danger {
+    -fx-background-color: transparent;
+    -fx-border-color: -lt-danger-border;
+    -fx-text-fill: -lt-danger;
+}
+
+.btn-danger:hover {
+    -fx-background-color: -lt-danger;
+    -fx-border-color: -lt-danger;
+    -fx-text-fill: -lt-on-accent;
+}
+
+.btn-ghost {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: -lt-muted;
+}
+
+.btn-ghost:hover {
+    -fx-background-color: -lt-surface-sunken;
+    -fx-text-fill: -lt-text;
+}
+
+.btn-danger-soft {
+    -fx-background-color: transparent;
+    -fx-border-color: -lt-danger-border;
+    -fx-text-fill: -lt-danger;
+}
+
+.btn-danger-soft:hover {
+    -fx-background-color: -lt-danger;
+    -fx-border-color: -lt-danger;
+    -fx-text-fill: -lt-on-accent;
+}
+
+.btn-link {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: -lt-primary;
+    -fx-padding: 2 4;
+    -fx-underline: true;
+}
+
+.btn-link:hover {
+    -fx-text-fill: -lt-primary-hover;
+}
+
+/* Icon-only buttons: ghost, 26px square, tooltip carries the label. */
+.btn-icon {
+    -fx-padding: 0;
+    -fx-min-width: 26;
+    -fx-min-height: 26;
+    -fx-pref-width: 26;
+    -fx-pref-height: 26;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-background-radius: 4;
+    -fx-border-radius: 4;
+}
+
+.btn-icon:hover {
+    -fx-background-color: -lt-surface-sunken;
+}
+
+.icon-glyph {
+    -fx-fill: -lt-muted;
+}
+
+.icon-outline {
+    -fx-fill: transparent;
+    -fx-stroke: -lt-muted;
+    -fx-stroke-width: 1.5;
+    -fx-stroke-line-cap: round;
+    -fx-stroke-line-join: round;
+}
+
+.btn-icon:hover .icon-glyph {
+    -fx-fill: -lt-text;
+}
+
+.btn-icon:hover .icon-outline {
+    -fx-stroke: -lt-text;
+}
+
+.btn-icon-danger:hover .icon-glyph {
+    -fx-fill: -lt-danger;
+}
+
+.btn-icon-danger:hover .icon-outline {
+    -fx-stroke: -lt-danger;
+}
+
+/* ------------------------------------------------------------------ status */
+
+/*
+ * Status is text plus an 8px dot; colour never carries the meaning alone.
+ * Chips stay for the few high-signal states (EXAM, Today, Done).
+ */
+.status-line {
+    -fx-spacing: 6;
+    -fx-alignment: center-left;
+}
+
+.status-text {
+    -fx-font-size: 12px;
+    -fx-text-fill: -lt-text-body;
+}
+
+.status-dot {
+    -fx-min-width: 8;
+    -fx-min-height: 8;
+    -fx-max-width: 8;
+    -fx-max-height: 8;
+    -fx-background-radius: 8;
+    -fx-background-color: -lt-muted;
+}
+
+.status-dot-ok {
+    -fx-background-color: -lt-success;
+}
+
+.status-dot-warn {
+    -fx-background-color: -lt-warning;
+}
+
+.status-dot-danger {
+    -fx-background-color: -lt-danger;
+}
+
+.status-dot-info {
+    -fx-background-color: -lt-primary;
+}
+
+.chip {
+    -fx-padding: 2 8;
+    -fx-background-radius: 4;
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-background-color: -lt-surface-sunken;
+    -fx-text-fill: -lt-text-body;
+}
+
+.chip-neutral {
+    -fx-background-color: -lt-surface-sunken;
+    -fx-text-fill: -lt-text-body;
+}
+
+.chip-ok {
+    -fx-background-color: -lt-success-soft;
+    -fx-text-fill: -lt-success;
+}
+
+.chip-warn {
+    -fx-background-color: -lt-warning-soft;
+    -fx-text-fill: -lt-warning;
+}
+
+.chip-danger {
+    -fx-background-color: -lt-danger-soft;
+    -fx-text-fill: -lt-danger;
+}
+
+.chip-info {
+    -fx-background-color: -lt-primary-soft;
+    -fx-text-fill: -lt-primary;
+}
+
+.badge {
+    -fx-padding: 1 6;
+    -fx-background-radius: 4;
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-background-color: -lt-surface-sunken;
+    -fx-text-fill: -lt-text-body;
+}
+
+.badge-neutral {
+    -fx-background-color: -lt-surface-sunken;
+    -fx-text-fill: -lt-text-body;
+}
+
+.badge-success {
+    -fx-background-color: -lt-success-soft;
+    -fx-text-fill: -lt-success;
+}
+
+.badge-warning {
+    -fx-background-color: -lt-warning-soft;
+    -fx-text-fill: -lt-warning;
+}
+
+.badge-danger {
+    -fx-background-color: -lt-danger-soft;
+    -fx-text-fill: -lt-danger;
+}
+
+.badge-info {
+    -fx-background-color: -lt-primary-soft;
+    -fx-text-fill: -lt-primary;
+}
+
+.badge-violet {
+    -fx-background-color: -lt-violet-soft;
+    -fx-text-fill: -lt-violet;
+}
+
+/* ------------------------------------------------------------------ stat tiles */
+
+.stat {
+    -fx-background-color: -lt-surface-alt;
+    -fx-background-radius: 8;
+    -fx-border-color: -lt-border;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+    -fx-padding: 16;
+    -fx-spacing: 4;
+}
+
+.stat-label {
+    -fx-font-size: 11px;
+    -fx-font-weight: 500;
+    -fx-text-fill: -lt-muted;
+}
+
+.stat-value {
+    -fx-font-size: 16px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -lt-text;
+}
+
+.stat-value-success {
+    -fx-text-fill: -lt-success;
+}
+
+.stat-value-info {
+    -fx-text-fill: -lt-primary;
+}
+
+.stat-value-warning {
+    -fx-text-fill: -lt-warning;
+}
+
+.stat-value-danger {
+    -fx-text-fill: -lt-danger;
+}
+
+/* ------------------------------------------------------------------ banners */
+
+.banner {
+    -fx-padding: 16;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+    -fx-spacing: 8;
+}
+
+.banner-info {
+    -fx-background-color: -lt-info-soft;
+    -fx-border-color: -lt-info;
+}
+
+.banner-warn {
+    -fx-background-color: -lt-warning-soft;
+    -fx-border-color: -lt-warning-border;
+}
+
+.banner-danger {
+    -fx-background-color: -lt-danger-soft;
+    -fx-border-color: -lt-danger-border;
+}
+
+.banner-success {
+    -fx-background-color: -lt-success-soft;
+    -fx-border-color: -lt-success;
+}
+
+.banner-title {
+    -fx-font-weight: 600;
+    -fx-text-fill: -lt-text;
+}
+
+.banner-text {
+    -fx-text-fill: -lt-text-body;
+    -fx-font-size: 13px;
+}
+
+.banner-warn .banner-title,
+.banner-warn .banner-text {
+    -fx-text-fill: -lt-warning;
+}
+
+.banner-danger .banner-title,
+.banner-danger .banner-text {
+    -fx-text-fill: -lt-danger;
+}
+
+.banner-info .banner-title,
+.banner-info .banner-text {
+    -fx-text-fill: -lt-info;
+}
+
+/* ------------------------------------------------------------------ lists / tables */
+
+.list-view {
+    -fx-background-color: -lt-surface;
+    -fx-background-radius: 8;
+    -fx-border-color: -lt-border;
+    -fx-border-radius: 8;
+    -fx-padding: 0;
+}
+
+.list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: -lt-text-body;
+    -fx-padding: 8;
+}
+
+.list-cell:filled:hover {
+    -fx-background-color: -lt-surface-sunken;
+}
+
+.list-cell:filled:selected {
+    -fx-background-color: -lt-primary-soft;
+    -fx-text-fill: -lt-text;
+}
+
+.table-view {
+    -fx-background-color: -lt-surface;
+    -fx-background-radius: 8;
+    -fx-border-color: -lt-border;
+    -fx-border-radius: 8;
+    -fx-table-cell-border-color: transparent;
+    -fx-padding: 0;
+}
+
+.table-view:focused {
+    -fx-border-color: -lt-border-strong;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: -lt-surface;
+    -fx-border-color: transparent transparent -lt-border transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.table-view .column-header,
+.table-view .filler {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-size: 36;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: -lt-muted;
+    -fx-font-weight: 600;
+    -fx-font-size: 11px;
+    -fx-alignment: center-left;
+    -fx-padding: 0 10;
+}
+
+/* 44px rows, hairline separators, no zebra stripes. */
+.table-row-cell {
+    -fx-background-color: -lt-surface;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent transparent -lt-border transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-cell-size: 44;
+    -fx-text-background-color: -lt-text-body;
+}
+
+.table-row-cell:filled:hover {
+    -fx-background-color: -lt-surface-alt;
+}
+
+.table-row-cell:filled:selected {
+    -fx-background-color: -lt-primary-soft;
+    -fx-text-background-color: -lt-text;
+}
+
+.table-cell {
+    -fx-padding: 0 10;
+    -fx-border-color: transparent;
+    -fx-font-size: 13px;
+    -fx-alignment: center-left;
+}
+
+.table-cell.cell-center {
+    -fx-alignment: center;
+}
+
+.table-cell.cell-number {
+    -fx-alignment: center-right;
+}
+
+/* The Skills table sits inside a card and keeps a slightly tighter rhythm. */
+.compact-table .table-row-cell {
+    -fx-cell-size: 44;
+}
+
+.table-row-cell.day-row-fixed {
+    -fx-background-color: -lt-surface-sunken;
+    -fx-text-background-color: -lt-muted;
+}
+
+.table-row-cell.day-row-cancelled {
+    -fx-opacity: 0.62;
+}
+
+.table-row-cell.day-row-done {
+    -fx-background-color: -lt-cal-done;
+}
+
+.table-row-cell.day-row-manual {
+    -fx-background-color: -lt-cal-eve;
+}
+
+.split-pane {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.split-pane.calendar-split {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+}
+
+.split-pane > .split-pane-divider {
+    -fx-background-color: -lt-border;
+    -fx-padding: 0 1 0 1;
+}
+
+/* A selected status row is marked the same way as any selected row. */
+.table-row-cell.status-row-deficit,
+.table-row-cell.status-row-tight,
+.table-row-cell.status-row-fits,
+.table-row-cell.status-row-deficit-selected,
+.table-row-cell.status-row-tight-selected,
+.table-row-cell.status-row-fits-selected {
+    -fx-background-color: -lt-primary-soft;
+    -fx-text-background-color: -lt-text;
+}
+
+.table-cell.status-cell-deficit {
+    -fx-text-fill: -lt-danger;
+    -fx-font-weight: 600;
+}
+
+.table-cell.status-cell-tight {
+    -fx-text-fill: -lt-warning;
+    -fx-font-weight: 600;
+}
+
+.table-cell.status-cell-fits {
+    -fx-text-fill: -lt-success;
+    -fx-font-weight: 600;
+}
+
+.table-header-cell {
+    -fx-font-weight: 600;
+    -fx-border-width: 0 0 1 0;
+    -fx-border-color: -lt-border;
+}
+
+.ellipsis-label {
+    -fx-text-overrun: ellipsis;
+}
+
+.table-view .placeholder {
+    -fx-background-color: -lt-surface;
+}
+
+.table-view .placeholder .label {
+    -fx-text-fill: -lt-muted;
+    -fx-font-size: 13px;
+}
+
+/* ------------------------------------------------------------------ inputs */
+
+.text-field,
+.text-area,
+.combo-box,
+.date-picker,
+.spinner,
+.choice-box {
+    -fx-background-color: -lt-surface;
+    -fx-background-radius: 4;
+    -fx-border-color: -lt-border-strong;
+    -fx-border-radius: 4;
+    -fx-border-width: 1;
+    -fx-text-fill: -lt-text;
+    -fx-min-height: 36;
+    -fx-font-size: 13px;
+}
+
+.text-field,
+.combo-box,
+.date-picker,
+.spinner,
+.choice-box {
+    -fx-pref-height: 36;
+}
+
+.text-field {
+    -fx-padding: 6 10;
+}
+
+/* The combo box displays its value in an inner list cell, so the outer control only owns
+ * the border and the room around the arrow. Padding both would clip the value text. */
+.combo-box {
+    -fx-padding: 0 4 0 10;
+}
+
+/*
+ * Spinner: the outer control owns the border and the height. The editor inside it is a
+ * plain text field, so it must not inherit the padding and height above, otherwise the
+ * padding is applied twice and the digits are clipped.
+ */
+.spinner {
+    -fx-padding: 0;
+    -fx-background-insets: 0;
+}
+
+.spinner .text-field {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 0 4 0 10;
+    -fx-pref-height: -1;
+    -fx-min-height: -1;
+    -fx-pref-width: 64;
+    -fx-min-width: 56;
+    -fx-font-size: 13px;
+    -fx-alignment: center-left;
+}
+
+.spinner .increment-arrow-button,
+.spinner .decrement-arrow-button {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
+    -fx-padding: 0 6;
+}
+
+.spinner .increment-arrow-button:hover,
+.spinner .decrement-arrow-button:hover {
+    -fx-background-color: -lt-surface-sunken;
+}
+
+.spinner .increment-arrow,
+.spinner .decrement-arrow {
+    -fx-background-color: -lt-muted;
+    -fx-padding: 2 3;
+}
+
+.spinner:focused {
+    -fx-border-color: -lt-primary;
+    -fx-border-width: 2;
+}
+
+/* Inline editor used inside table cells; the cell owns its own spacing. */
+.cell-editor {
+    -fx-pref-height: 30;
+    -fx-min-height: 30;
+    -fx-padding: 3 6;
+    -fx-font-size: 13px;
+    -fx-alignment: center-right;
+}
+
+/* Inline validation under a table or form, in the semantic danger colour. */
+.field-error {
+    -fx-font-size: 11px;
+    -fx-text-fill: -lt-danger;
+    -fx-wrap-text: true;
+}
+
+/* Multi-line inputs keep their own height. */
+.text-area {
+    -fx-pref-height: -1;
+    -fx-min-height: 96;
+}
+
+.text-field:focused,
+.text-area:focused,
+.combo-box:focused,
+.date-picker:focused,
+.spinner:focused,
+.choice-box:focused {
+    -fx-border-color: -lt-primary;
+    -fx-border-width: 2;
+}
+
+.text-area .content {
+    -fx-background-color: -lt-surface;
+}
+
+.text-area {
+    -fx-prompt-text-fill: -lt-faint;
+}
+
+.text-field {
+    -fx-prompt-text-fill: -lt-faint;
+}
+
+/* The selected value must always be solid text on the control surface in both themes. */
+.combo-box > .list-cell,
+.combo-box .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 0 6 0 0;
+    -fx-text-fill: -lt-text;
+    -fx-alignment: center-left;
+}
+
+.combo-box > .list-cell .text,
+.combo-box .list-cell .text {
+    -fx-fill: -lt-text;
+}
+
+.combo-box .arrow-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0 8 0 4;
+}
+
+.combo-box .arrow {
+    -fx-background-color: -lt-muted;
+}
+
+/*
+ * Dropdown list. The value cell above is a compact list cell, so the popup needs its own
+ * rules: real row height, an inset label, a raised surface and clear hover/selected states.
+ */
+.combo-box-popup > .list-view,
+.combo-box-popup .list-view {
+    -fx-background-color: -lt-surface;
+    -fx-background-radius: 6;
+    -fx-border-color: -lt-border-strong;
+    -fx-border-radius: 6;
+    -fx-border-width: 1;
+    -fx-padding: 4 0 4 0;
+    -fx-fixed-cell-size: 34;
+    -fx-effect: dropshadow(gaussian, rgba(20, 18, 15, 0.18), 14, 0.12, 0, 4);
+}
+
+.combo-box-popup .list-view .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: -lt-text;
+    -fx-padding: 0 14 0 12;
+    -fx-alignment: center-left;
+}
+
+.combo-box-popup .list-view .list-cell .text {
+    -fx-fill: -lt-text;
+}
+
+.combo-box-popup .list-view .list-cell:filled:hover {
+    -fx-background-color: -lt-surface-sunken;
+}
+
+.combo-box-popup .list-view .list-cell:filled:selected {
+    -fx-background-color: -lt-primary-soft;
+    -fx-text-fill: -lt-text;
+}
+
+.combo-box-popup .list-view .list-cell:filled:selected .text {
+    -fx-fill: -lt-text;
+}
+
+.combo-box-popup .list-view .list-cell:empty {
+    -fx-background-color: transparent;
+}
+
+
+.check-box {
+    -fx-text-fill: -lt-text-body;
+}
+
+.check-box .box {
+    -fx-background-color: -lt-surface;
+    -fx-border-color: -lt-border-strong;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+}
+
+.check-box:selected .mark {
+    -fx-background-color: white;
+}
+
+.check-box:selected .box {
+    -fx-background-color: -lt-primary;
+    -fx-border-color: -lt-primary;
+}
+
+/* ------------------------------------------------------------------ scroll panes */
+
+.scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+}
+
+.scroll-pane > .viewport,
+.scroll-pane > .corner {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar:vertical,
+.scroll-bar:horizontal {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: -lt-border-strong;
+    -fx-background-radius: 4;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: -lt-muted;
+}
+
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-padding: 2;
+}
+
+/* ------------------------------------------------------------------ progress */
+
+.progress-bar {
+    -fx-pref-height: 6;
+}
+
+.progress-bar > .track {
+    -fx-background-color: -lt-surface-sunken;
+    -fx-background-radius: 3;
+}
+
+.progress-bar > .bar {
+    -fx-background-color: -lt-primary;
+    -fx-background-radius: 3;
+    -fx-background-insets: 0;
+    -fx-padding: 2;
+}
+
+.progress-bar-success > .bar {
+    -fx-background-color: -lt-success;
+}
+
+.progress-bar-warning > .bar {
+    -fx-background-color: -lt-warning;
+}
+
+.progress-bar-danger > .bar {
+    -fx-background-color: -lt-danger;
+}
+
+/* ------------------------------------------------------------------ tabs */
+
+.tab-pane {
+    -fx-background-color: -lt-bg;
+    -fx-tab-min-height: 48;
+}
+
+.tab-pane > .tab-header-area {
+    -fx-padding: 0 8 0 8;
+}
+
+.tab-pane > .tab-header-area > .tab-header-background {
+    -fx-background-color: -lt-surface;
+    -fx-border-color: transparent transparent -lt-border transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab {
+    -fx-background-color: transparent;
+    -fx-background-radius: 6 6 0 0;
+    -fx-padding: 0 16;
+    -fx-border-color: transparent;
+    -fx-border-width: 0 0 2 0;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab:hover {
+    -fx-background-color: -lt-surface-alt;
+}
+
+/* Active tab: soft tint, a 2 px ink underline and a wider hit area. */
+.tab-pane > .tab-header-area > .headers-region > .tab:selected {
+    -fx-background-color: -lt-surface-alt;
+    -fx-background-radius: 6 6 0 0;
+    -fx-padding: 0 18;
+    -fx-border-color: transparent transparent -lt-primary transparent;
+    -fx-border-width: 0 0 2 0;
+}
+
+/* JavaFX draws its own square focus box around the selected tab label; remove it so the
+ * underline is the only selected-state cue. */
+.tab-pane > .tab-header-area > .headers-region > .tab .focus-indicator,
+.tab-pane > .tab-header-area > .headers-region > .tab:selected .focus-indicator,
+.tab-pane > .tab-header-area > .headers-region > .tab:focused .focus-indicator {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab:focused {
+    -fx-background-insets: 0;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab .tab-label {
+    -fx-text-fill: -lt-muted;
+    -fx-font-size: 13px;
+    -fx-font-weight: 500;
+}
+
+.tab-pane > .tab-header-area > .headers-region > .tab:selected .tab-label {
+    -fx-text-fill: -lt-text;
+    -fx-font-weight: 600;
+}
+
+/* ------------------------------------------------------------------ compact summary rows */
+
+.day-schedule {
+    -fx-spacing: 4;
+    -fx-padding: 2 0 0 0;
+}
+
+.day-schedule .stat {
+    -fx-padding: 6 10;
+    -fx-spacing: 0;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+}
+
+.day-schedule .stat-label {
+    -fx-font-size: 10px;
+}
+
+.day-schedule .stat-value {
+    -fx-font-size: 13px;
+}
+
+.banner-compact {
+    -fx-padding: 8 12;
+    -fx-spacing: 8;
+}
+
+.banner-compact .banner-title {
+    -fx-font-size: 12px;
+}
+
+.banner-compact .banner-text {
+    -fx-font-size: 12px;
+}
+
+.hint-compact {
+    -fx-font-size: 11px;
+}
+
+.summary-list {
+    -fx-spacing: 0;
+}
+
+.summary-row {
+    -fx-padding: 8 0;
+    -fx-border-color: transparent transparent -lt-border transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.summary-name {
+    -fx-font-size: 13px;
+    -fx-text-fill: -lt-text-body;
+}
+
+.summary-date {
+    -fx-font-size: 13px;
+    -fx-text-fill: -lt-text;
+}
+
+.cell-strong {
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -lt-text;
+}
+
+.cell-number {
+    -fx-font-size: 13px;
+    -fx-text-fill: -lt-text;
+}
+
+.tab-pane > .tab-content-area {
+    -fx-background-color: -lt-bg;
+    -fx-padding: 0;
+}
+
+/* ------------------------------------------------------------------ steps */
+
+.step-number {
+    -fx-min-width: 22;
+    -fx-min-height: 22;
+    -fx-pref-width: 22;
+    -fx-pref-height: 22;
+    -fx-background-color: -lt-surface-sunken;
+    -fx-background-radius: 11;
+    -fx-alignment: center;
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -lt-text;
+}
+
+.step-rule {
+    -fx-min-width: 24;
+    -fx-pref-width: 24;
+    -fx-min-height: 1;
+    -fx-max-height: 1;
+    -fx-background-color: -lt-border-strong;
+}
+
+/* ------------------------------------------------------------------ misc */
+
+.scope-card {
+    -fx-background-color: -lt-surface;
+    -fx-border-color: -lt-border;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 16;
+    -fx-spacing: 8;
+}
+
+.scope-unit-title {
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -lt-text;
+}
+
+.diff-easy {
+    -fx-background-color: -lt-success-soft;
+    -fx-text-fill: -lt-success;
+}
+
+.diff-mid {
+    -fx-background-color: -lt-warning-soft;
+    -fx-text-fill: -lt-warning;
+}
+
+.diff-hard {
+    -fx-background-color: -lt-danger-soft;
+    -fx-text-fill: -lt-danger;
+}
+
+.difficulty-badge {
+    -fx-padding: 2 6;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-cursor: hand;
+}
+
+.difficulty-badge-easy {
+    -fx-background-color: -lt-success-soft;
+    -fx-text-fill: -lt-success;
+}
+
+.difficulty-badge-medium {
+    -fx-background-color: -lt-warning-soft;
+    -fx-text-fill: -lt-warning;
+}
+
+.difficulty-badge-hard {
+    -fx-background-color: -lt-danger-soft;
+    -fx-text-fill: -lt-danger;
+}
+
+.difficulty-hint-easy {
+    -fx-text-fill: -lt-success;
+    -fx-font-weight: 600;
+}
+
+.difficulty-hint-medium {
+    -fx-text-fill: -lt-warning;
+    -fx-font-weight: 600;
+}
+
+.difficulty-hint-hard {
+    -fx-text-fill: -lt-danger;
+    -fx-font-weight: 600;
+}
+
+.difficulty-value-label {
+    -fx-font-weight: 600;
+    -fx-font-size: 16px;
+}
+
+.select-checkbox {
+    -fx-padding: 0;
+    -fx-pref-width: 20;
+    -fx-pref-height: 20;
+}
+
+.syllabus-toolbar {
+    -fx-padding: 8 0 8 0;
+    -fx-spacing: 8;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent -lt-border transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+/* Empty states: one short sentence, one action, no illustration. */
+.empty-state {
+    -fx-padding: 32;
+    -fx-alignment: center;
+    -fx-spacing: 8;
+}
+
+.empty-state-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -lt-text;
+}
+
+.empty-state-hint {
+    -fx-font-size: 13px;
+    -fx-text-fill: -lt-muted;
+    -fx-wrap-text: true;
+}
+
+.empty-state .label {
+    -fx-text-fill: -lt-muted;
+}
+
+/* ------------------------------------------------------------------ subjects (master-detail) */
+
+.subject-item {
+    -fx-background-color: transparent;
+    -fx-background-radius: 6;
+    -fx-border-color: transparent;
+    -fx-border-radius: 6;
+    -fx-border-width: 0 0 0 2;
+    -fx-padding: 8 12 8 16;
+    -fx-spacing: 4;
+    -fx-cursor: hand;
+}
+
+.subject-item:hover {
+    -fx-background-color: -lt-surface-alt;
+}
+
+.subject-item-selected {
+    -fx-background-color: -lt-primary-soft;
+    -fx-border-color: transparent transparent transparent -lt-primary;
+}
+
+.subject-item:focused {
+    -fx-border-color: transparent transparent transparent -lt-primary;
+}
+
+.subject-code {
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -lt-text;
+}
+
+.subject-name {
+    -fx-font-size: 12px;
+    -fx-text-fill: -lt-muted;
+}
+
+/* One subtopic row: readable name, aligned status and click-to-edit hours. */
+.subtopic-row {
+    -fx-min-height: 40px;
+    -fx-padding: 8 8;
+    -fx-background-radius: 4;
+    -fx-border-color: transparent transparent -lt-border transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.subtopic-row:hover {
+    -fx-background-color: -lt-surface-alt;
+}
+
+.topic-name {
+    -fx-font-size: 13px;
+    -fx-text-fill: -lt-text;
+}
+
+.hours-cell {
+    -fx-padding: 0 4;
+}
+
+.hours-value {
+    -fx-font-size: 12px;
+    -fx-text-fill: -lt-text-body;
+    -fx-padding: 1 3;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-cursor: hand;
+}
+
+.hours-value:hover {
+    -fx-text-fill: -lt-primary;
+    -fx-border-color: transparent transparent -lt-primary transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.hours-editor {
+    -fx-pref-width: 84;
+    -fx-padding: 3 6;
+}
+
+.text-field-invalid {
+    -fx-border-color: -lt-danger;
+    -fx-border-width: 2;
+}
+
+.collapse-toggle {
+    -fx-cursor: hand;
+    -fx-font-size: 11px;
+    -fx-text-fill: -lt-muted;
+}
+
+.column-label {
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -lt-muted;
+}
+
+.unit-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -lt-text;
+}
+
+.check-strong {
+    -fx-font-weight: 600;
+    -fx-font-size: 13px;
+}
+
+.timeline-card {
+    -fx-background-color: -lt-info-soft;
+    -fx-border-color: -lt-info;
+}
+
+/* ------------------------------------------------------------------ calendar */
+
+.weekday-head {
+    -fx-font-weight: 600;
+    -fx-font-size: 11px;
+    -fx-text-fill: -lt-muted;
+    -fx-alignment: center;
+}
+
+.day-cell {
+    -fx-background-color: -lt-surface;
+    -fx-border-color: -lt-border;
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-padding: 8;
+    -fx-spacing: 4;
+    -fx-cursor: hand;
+}
+
+.day-cell:hover {
+    -fx-border-color: -lt-border-strong;
+}
+
+.day-cell-exam {
+    -fx-background-color: -lt-cal-exam;
+    -fx-border-color: -lt-accent;
+}
+
+.day-cell-window {
+    -fx-background-color: -lt-cal-window;
+    -fx-border-color: -lt-warning-border;
+}
+
+/* Today and the selected day are rings, not coloured fills. */
+.day-cell-today {
+    -fx-border-color: -lt-primary;
+    -fx-border-width: 2;
+}
+
+.day-cell-selected {
+    -fx-background-color: -lt-primary-soft;
+    -fx-border-color: -lt-primary;
+    -fx-border-width: 2;
+}
+
+.day-number {
+    -fx-font-weight: 600;
+    -fx-font-size: 13px;
+    -fx-text-fill: -lt-text;
+}
+
+.day-hours {
+    -fx-font-size: 11px;
+    -fx-text-fill: -lt-muted;
+}
+
+.day-subjects {
+    -fx-font-size: 11px;
+    -fx-text-fill: -lt-muted;
+}
+
+.legend {
+    -fx-spacing: 16;
+    -fx-alignment: center-left;
+    -fx-padding: 8 0 0 0;
+}
+
+.legend-item {
+    -fx-spacing: 6;
+    -fx-alignment: center-left;
+}
+
+.legend-swatch {
+    -fx-min-width: 8;
+    -fx-min-height: 8;
+    -fx-max-width: 8;
+    -fx-max-height: 8;
+    -fx-background-radius: 8;
+    -fx-border-width: 0;
+}
+
+.legend-text {
+    -fx-font-size: 11px;
+    -fx-text-fill: -lt-muted;
+}
+
+/* Today and Selected are rings in the grid, so the legend swatches are rings too. */
+.legend-swatch.day-cell-today {
+    -fx-border-width: 2;
+    -fx-border-color: -lt-primary;
+    -fx-background-color: transparent;
+}
+
+.legend-swatch.day-cell-selected {
+    -fx-border-width: 2;
+    -fx-border-color: -lt-primary;
+    -fx-background-color: -lt-primary-soft;
+}
+
+/* Cancelled timetable rows are struck through instead of merely greyed out. */
+.table-cell.text-cancelled {
+    -fx-strikethrough: true;
+    -fx-text-fill: -lt-muted;
+}
+
+/* ------------------------------------------------------------------ toast */
+
+.toast-layer {
+    -fx-padding: 0 24 24 0;
+    -fx-spacing: 8;
+    -fx-alignment: bottom-right;
+}
+
+.toast {
+    -fx-background-color: -lt-text;
+    -fx-background-radius: 8;
+    -fx-padding: 12 16;
+    -fx-effect: dropshadow(three-pass-box, rgba(28, 27, 26, 0.16), 12, 0, 0, 4);
+    -fx-max-width: 520;
+}
+
+.toast .label {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 13px;
+}
+
+.toast-success {
+    -fx-background-color: #2f7d5b;
+}
+
+.toast-warn {
+    -fx-background-color: #8a5306;
+}
+
+.toast-danger {
+    -fx-background-color: #96372a;
+}
+
+.toast-info {
+    -fx-background-color: #1e3a5f;
+}
+
+/* ------------------------------------------------------------------ dialogs */
+
+.dialog-pane {
+    -fx-background-color: -lt-surface;
+    -fx-padding: 8 0 0 0;
+}
+
+.dialog-pane > .header-panel {
+    -fx-background-color: -lt-surface;
+    -fx-padding: 16 24 0 24;
+}
+
+.dialog-pane > .header-panel .label {
+    -fx-font-size: 16px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -lt-text;
+}
+
+.dialog-pane > .content.label {
+    -fx-text-fill: -lt-text-body;
+    -fx-font-size: 13px;
+}
+
+.dialog-pane .content {
+    -fx-padding: 16 24 8 24;
+}
+
+.dialog-pane .button-bar {
+    -fx-padding: 8 24 16 24;
+}
+
+.dialog-pane .button-bar .button {
+    -fx-padding: 4 14;
+}
+
+.detail-area {
+    -fx-font-family: "Consolas", "Courier New", monospace;
+    -fx-font-size: 11px;
+}
+
+/* ------------------------------------------------------------------ shortcuts */
+
+.shortcut-key {
+    -fx-background-color: -lt-surface-sunken;
+    -fx-border-color: -lt-border;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-padding: 0 5;
+    -fx-font-family: "Consolas", "Courier New", monospace;
+    -fx-font-size: 11px;
+    -fx-text-fill: -lt-muted;
+}
