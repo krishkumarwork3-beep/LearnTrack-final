@@ -67,12 +67,22 @@ public class DatesheetAnalyserView {
     private VBox unmatchedBox;
     private VBox warningsBox;
     private VBox warningsCard;
-    private VBox examDatesBox;
     private Label noticesLabel;
+    private final SubjectListService subjectListService;
+    private Button btnAddExam;
+    private Button btnEditExam;
+    private Button btnRemoveExam;
     private BooleanBinding cannotApply;
 
     private String lastExamType;
     private Map<String, List<DatesheetEntry>> lastAmbiguous;
+    /** Subjects of the active semester this sheet never mentioned (straight from the analysis). */
+    private final List<SubjectInfo> analysedUnmatched = new ArrayList<>();
+    /** The part of {@link #analysedUnmatched} with no row in the table: a hand-added exam drops out of it at once. */
+    private final List<SubjectInfo> lastUnmatched = new ArrayList<>();
+    private String lastSummaryPrefix;
+    /** How many rows the analysis produced, so clearing the table by hand reads differently. */
+    private int analysedMatchCount;
     private final Map<String, ComboBox<String>> ambiguousResolutionCombos = new HashMap<>();
 
     public DatesheetAnalyserView(SemesterDAO semesterDAO, ExamDAO examDAO, TopicDAO topicDAO,
@@ -90,7 +100,7 @@ public class DatesheetAnalyserView {
         this.replanRunner = replanRunner;
         this.refreshAll = refreshAll;
 
-        SubjectListService subjectListService = new SubjectListService(timetableDAO, examDAO);
+        this.subjectListService = new SubjectListService(timetableDAO, examDAO);
         this.analyserService = new DatesheetAnalyserService(
                 examDAO, subjectListService, settingsDAO, timelineService, null
         );
@@ -182,11 +192,6 @@ public class DatesheetAnalyserView {
         ambiguousSubtitle.setWrapText(true);
         ambiguousPanel.getChildren().addAll(ambiguousTitle, ambiguousSubtitle);
 
-        examDatesBox = new VBox(0);
-        examDatesBox.getStyleClass().add("summary-list");
-        examDatesBox.setVisible(false);
-        examDatesBox.setManaged(false);
-
         noticesLabel = new Label();
         noticesLabel.getStyleClass().add("hint");
         noticesLabel.setWrapText(true);
@@ -198,7 +203,6 @@ public class DatesheetAnalyserView {
                 summaryLabel,
                 statusLabel,
                 ambiguousPanel,
-                examDatesBox,
                 noticesLabel);
 
         // ------------------------------------------------------------ results table
@@ -278,8 +282,36 @@ public class DatesheetAnalyserView {
         statusCol.setMinWidth(100);
 
         matchTable.getColumns().addAll(codeCol, nameCol, typeCol, dateCol, dayCol, startCol, endCol, statusCol);
+        matchTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
-        VBox tableCard = UiKit.card(UiKit.sectionTitle("Matched subjects"), matchTable);
+        // ------------------------------------------------------------ add / edit / remove rows
+        btnAddExam = UiKit.secondaryButton("Add exam");
+        btnAddExam.setTooltip(new Tooltip("Add an exam that is not on this datesheet, e.g. one missing from it."));
+        btnAddExam.setOnAction(e -> handleExamRowDialog(null));
+
+        btnEditExam = UiKit.secondaryButton("Edit selected exam");
+        btnEditExam.setTooltip(new Tooltip("Change the course, date, day and times of the selected exam."));
+        btnEditExam.setOnAction(e -> {
+            DatesheetMatchRow selected = matchTable.getSelectionModel().getSelectedItem();
+            if (selected == null) {
+                UiKit.toast("Select a row in Matched subjects to edit it.", UiKit.Kind.WARN);
+                return;
+            }
+            handleExamRowDialog(selected);
+        });
+
+        btnRemoveExam = UiKit.dangerTextButton("Remove selected");
+        btnRemoveExam.setTooltip(new Tooltip("Take the selected exam(s) out of this datesheet review."));
+        btnRemoveExam.setOnAction(e -> handleRemoveSelected());
+
+        btnEditExam.disableProperty().bind(matchTable.getSelectionModel().selectedItemProperty().isNull());
+        btnRemoveExam.disableProperty().bind(matchTable.getSelectionModel().selectedItemProperty().isNull());
+
+        HBox tableActions = new HBox(10, btnAddExam, btnEditExam, btnRemoveExam, UiKit.spacer(),
+                UiKit.hint("The day always follows the date you choose."));
+        tableActions.setAlignment(Pos.CENTER_LEFT);
+
+        VBox tableCard = UiKit.card(UiKit.sectionTitle("Matched subjects"), tableActions, matchTable);
 
         // ------------------------------------------------------------ unmatched / warnings
         // Both boxes are pinned to the same fixed height so the page never reflows when one
@@ -416,62 +448,6 @@ public class DatesheetAnalyserView {
         noticesLabel.setManaged(visible);
     }
 
-    /** One line per matched subject with the earliest start and latest end on the sheet. */
-    private void setExamDates(List<DatesheetMatchRow> rows) {
-        if (examDatesBox == null) {
-            return;
-        }
-        examDatesBox.getChildren().clear();
-        if (rows == null || rows.isEmpty()) {
-            examDatesBox.setVisible(false);
-            examDatesBox.setManaged(false);
-            return;
-        }
-
-        Map<String, LocalDate[]> spans = new LinkedHashMap<>();
-        for (DatesheetMatchRow row : rows) {
-            if (row.getExamDate() == null) {
-                continue;
-            }
-            String key = row.getUserSubjectName() != null && !row.getUserSubjectName().isBlank()
-                    ? row.getUserSubjectName() : row.getCourseCode();
-            LocalDate[] span = spans.get(key);
-            if (span == null) {
-                span = new LocalDate[]{row.getExamDate(), row.getExamDate()};
-                spans.put(key, span);
-            } else {
-                if (row.getExamDate().isBefore(span[0])) {
-                    span[0] = row.getExamDate();
-                }
-                if (row.getExamDate().isAfter(span[1])) {
-                    span[1] = row.getExamDate();
-                }
-            }
-        }
-
-        for (Map.Entry<String, LocalDate[]> entry : spans.entrySet()) {
-            LocalDate start = entry.getValue()[0];
-            LocalDate end = entry.getValue()[1];
-            String range = start.equals(end)
-                    ? start.format(DATE_DISPLAY_FORMAT)
-                    : start.format(DATE_DISPLAY_FORMAT) + " to " + end.format(DATE_DISPLAY_FORMAT);
-
-            Label name = new Label(entry.getKey());
-            name.getStyleClass().add("summary-name");
-            name.setWrapText(true);
-            Label dates = new Label(range);
-            dates.getStyleClass().add("summary-date");
-            HBox row = new HBox(16, name, UiKit.spacer(), dates);
-            row.setAlignment(Pos.CENTER_LEFT);
-            row.getStyleClass().add("summary-row");
-            examDatesBox.getChildren().add(row);
-        }
-
-        boolean visible = !examDatesBox.getChildren().isEmpty();
-        examDatesBox.setVisible(visible);
-        examDatesBox.setManaged(visible);
-    }
-
     private static void fixBoxHeight(ScrollPane pane) {
         pane.setPrefHeight(150);
         pane.setMinHeight(150);
@@ -496,6 +472,43 @@ public class DatesheetAnalyserView {
         });
     }
 
+    /**
+     * The one line under "Sheet …": how many of my subjects were found, how many are still
+     * missing from this sheet, and whether a decision is pending. Recomputed from the current
+     * table and missing list so hand-added exams keep it truthful.
+     */
+    private void refreshStatusLine() {
+        if (statusLabel == null) {
+            return;
+        }
+        statusLabel.getStyleClass().removeAll("text-danger", "text-success");
+        boolean analysed = lastAnalysedText != null && !lastAnalysedText.isBlank();
+        if (matchItems.isEmpty()) {
+            if (!analysed) {
+                statusLabel.setText("");
+                return;
+            }
+            statusLabel.setText(analysedMatchCount > 0
+                    ? "No exams left in this review. Add one back with Add exam."
+                    : "No subject codes from your active semester matched this datesheet.");
+            statusLabel.getStyleClass().add(analysedMatchCount > 0
+                    ? "text-success" : "text-danger");
+            return;
+        }
+
+        StringBuilder text = new StringBuilder();
+        text.append(matchItems.size()).append(" subject(s) matched and ready to apply.");
+        if (!lastUnmatched.isEmpty()) {
+            text.append(" ").append(lastUnmatched.size())
+                    .append(" subject(s) not found in this datesheet.");
+        }
+        if (lastAmbiguous != null && !lastAmbiguous.isEmpty()) {
+            text.append(" Decide the ambiguous course(s) below before applying.");
+        }
+        statusLabel.setText(text.toString());
+        statusLabel.getStyleClass().add("text-success");
+    }
+
     private void setUnmatched(List<SubjectInfo> subjects) {
         unmatchedBox.getChildren().clear();
         if (subjects == null || subjects.isEmpty()) {
@@ -513,6 +526,275 @@ public class DatesheetAnalyserView {
 
     private Window window() {
         return btnApply != null && btnApply.getScene() != null ? btnApply.getScene().getWindow() : null;
+    }
+
+    // ------------------------------------------------------------------ add / edit / remove rows
+
+    /**
+     * The "not found in datesheet" list is what the sheet never mentioned, minus whatever the
+     * table now carries: adding an exam by hand takes its subject out of the list at once.
+     */
+    private void recomputeUnmatched() {
+        lastUnmatched.clear();
+        for (SubjectInfo subject : analysedUnmatched) {
+            String code = subject.getSubjectCode();
+            boolean inTable = code != null && matchItems.stream().anyMatch(row ->
+                    row.getCourseCode() != null
+                            && row.getCourseCode().equalsIgnoreCase(code.trim()));
+            if (!inTable) {
+                lastUnmatched.add(subject);
+            }
+        }
+        setUnmatched(lastUnmatched);
+        refreshStatusLine();
+    }
+
+    /** The date range in the summary line always follows the rows currently in the table. */
+    private void refreshSummaryRange() {
+        if (summaryLabel == null || lastSummaryPrefix == null) {
+            return;
+        }
+        StringBuilder text = new StringBuilder(lastSummaryPrefix);
+        List<LocalDate> dates = new ArrayList<>();
+        for (DatesheetMatchRow row : matchItems) {
+            if (row.getExamDate() != null) {
+                dates.add(row.getExamDate());
+            }
+        }
+        if (!dates.isEmpty()) {
+            LocalDate first = Collections.min(dates);
+            LocalDate last = Collections.max(dates);
+            text.append(" · ").append(first.format(DATE_DISPLAY_FORMAT));
+            if (!last.equals(first)) {
+                text.append(" to ").append(last.format(DATE_DISPLAY_FORMAT));
+            }
+        }
+        summaryLabel.setText(text.toString());
+    }
+
+    /** Accepts "14:30", "2:30 PM", "9:00 AM"; null when the text is not a time. */
+    private static LocalTime parseTimeInput(String text) {
+        if (text == null || text.trim().isEmpty()) {
+            return null;
+        }
+        String cleaned = text.trim().replaceAll("\\s+", " ").toUpperCase(Locale.ENGLISH);
+        DateTimeFormatter format = DateTimeFormatter.ofPattern(
+                "[hh:mm a][h:mm a][hh:mma][h:mma][HH:mm][H:mm]", Locale.ENGLISH);
+        try {
+            return LocalTime.parse(cleaned, format);
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    private static String formatTimeText(LocalTime time) {
+        return time != null ? time.format(TIME_DISPLAY_FORMAT) : "";
+    }
+
+    private static Label fieldLabel(String text) {
+        Label label = new Label(text);
+        label.getStyleClass().add("subtle");
+        return label;
+    }
+
+    /** Removes the selected rows from the review; they simply get no date when the sheet is applied. */
+    private void handleRemoveSelected() {
+        List<DatesheetMatchRow> selected = new ArrayList<>(matchTable.getSelectionModel().getSelectedItems());
+        if (selected.isEmpty()) {
+            UiKit.toast("Select one or more rows in Matched subjects first.", UiKit.Kind.WARN);
+            return;
+        }
+        StringBuilder names = new StringBuilder();
+        for (DatesheetMatchRow row : selected) {
+            if (names.length() > 0) {
+                names.append(", ");
+            }
+            names.append(row.getCourseCode());
+        }
+        boolean sure = UiKit.confirm(window(), "Remove Exams",
+                "Remove " + selected.size() + " exam(s) from this datesheet?",
+                names + "\nThey will not get a date when you apply. You can add them back with Add exam.",
+                "Remove");
+        if (!sure) {
+            return;
+        }
+        matchItems.removeAll(selected);
+        matchTable.getSelectionModel().clearSelection();
+        matchTable.refresh();
+        recomputeUnmatched();
+        refreshSummaryRange();
+        if (cannotApply != null) {
+            cannotApply.invalidate();
+        }
+        UiKit.toast(selected.size() + " exam(s) removed from the review.");
+    }
+
+    /**
+     * Add (row == null) or edit one row of Matched subjects. The day is derived from the date,
+     * so changing the date rewrites the day by itself; nothing is typed by hand.
+     */
+    private void handleExamRowDialog(DatesheetMatchRow row) {
+        List<SubjectInfo> subjects;
+        try {
+            Semester active = semesterDAO.getActiveSemester();
+            if (active == null) {
+                UiKit.toast("Create or activate a semester first.", UiKit.Kind.WARN);
+                return;
+            }
+            subjects = subjectListService.buildSubjectList(active.getSemesterId());
+        } catch (SQLException ex) {
+            UiKit.error(window(), "Your subjects could not be read.", ex);
+            return;
+        }
+
+        final boolean adding = row == null;
+        Dialog<DatesheetMatchRow> dialog = new Dialog<>();
+        dialog.setTitle(adding ? "Add Exam" : "Edit Exam");
+        dialog.setHeaderText(adding ? "Add an exam missing from this datesheet"
+                : "Edit " + row.getCourseCode());
+        UiKit.styleDialog(dialog);
+
+        GridPane grid = new GridPane();
+        grid.setHgap(12);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(16));
+
+        ComboBox<String> codeCombo = new ComboBox<>();
+        codeCombo.setEditable(true);
+        codeCombo.setPromptText("Course code");
+        codeCombo.setPrefWidth(240);
+        Map<String, String> namesByCode = new LinkedHashMap<>();
+        for (SubjectInfo subject : subjects) {
+            codeCombo.getItems().add(subject.getSubjectCode());
+            namesByCode.put(subject.getSubjectCode().trim().toUpperCase(Locale.ENGLISH),
+                    subject.getDisplayName());
+        }
+        String initialCode = adding ? null : row.getCourseCode();
+        codeCombo.getEditor().setText(initialCode != null ? initialCode : "");
+        codeCombo.setValue(initialCode);
+
+        TextField nameField = new TextField(!adding && row.getUserSubjectName() != null
+                ? row.getUserSubjectName() : "");
+        nameField.setPromptText("Subject name");
+        nameField.setPrefWidth(240);
+        codeCombo.getEditor().textProperty().addListener((obs, oldV, newV) -> {
+            if (newV == null || newV.trim().isEmpty()) {
+                return;
+            }
+            String known = namesByCode.get(newV.trim().toUpperCase(Locale.ENGLISH));
+            if (known != null && nameField.getText().isBlank()) {
+                nameField.setText(known);
+            }
+        });
+
+        ComboBox<String> typeCombo = new ComboBox<>();
+        typeCombo.getItems().addAll("MST", "EST", "Other");
+        typeCombo.setPrefWidth(130);
+        String initialType = !adding && row.getExamType() != null && !row.getExamType().isBlank()
+                ? row.getExamType()
+                : (examTypeCombo.getValue() != null && !examTypeCombo.getValue().isBlank()
+                        ? examTypeCombo.getValue() : "MST");
+        if (!typeCombo.getItems().contains(initialType)) {
+            typeCombo.getItems().add(initialType);
+        }
+        typeCombo.setValue(initialType);
+
+        DatePicker datePicker = new DatePicker(adding ? null : row.getExamDate());
+        datePicker.setPromptText("Exam date");
+
+        Label dayLabel = new Label();
+        dayLabel.getStyleClass().add("subtle");
+        Runnable showDay = () -> {
+            LocalDate date = datePicker.getValue();
+            dayLabel.setText(date == null
+                    ? "Pick a date"
+                    : date.getDayOfWeek().getDisplayName(java.time.format.TextStyle.FULL, Locale.ENGLISH));
+        };
+        datePicker.valueProperty().addListener((obs, oldV, newV) -> showDay.run());
+        showDay.run();
+
+        TextField startField = new TextField(adding ? "9:00 AM" : formatTimeText(row.getStartTime()));
+        startField.setPromptText("e.g. 9:00 AM or 14:00");
+        startField.setPrefWidth(160);
+        TextField endField = new TextField(formatTimeText(adding ? null : row.getEndTime()));
+        endField.setPromptText("e.g. 12:00 PM (optional)");
+        endField.setPrefWidth(160);
+
+        grid.addRow(0, fieldLabel("Course code"), codeCombo);
+        grid.addRow(1, fieldLabel("Subject name"), nameField);
+        grid.addRow(2, fieldLabel("Exam type"), typeCombo);
+        grid.addRow(3, fieldLabel("Date"), datePicker);
+        grid.addRow(4, fieldLabel("Day"), dayLabel);
+        grid.addRow(5, fieldLabel("Start"), startField);
+        grid.addRow(6, fieldLabel("End"), endField);
+
+        dialog.getDialogPane().setContent(grid);
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        // OK stays disabled until there is a course code, a date and a readable start time.
+        BooleanBinding complete = new BooleanBinding() {
+            {
+                super.bind(codeCombo.getEditor().textProperty(), datePicker.valueProperty(),
+                        startField.textProperty(), endField.textProperty());
+            }
+
+            @Override
+            protected boolean computeValue() {
+                String code = codeCombo.getEditor().getText();
+                if (code == null || code.trim().isEmpty()) return false;
+                if (datePicker.getValue() == null) return false;
+                LocalTime start = parseTimeInput(startField.getText());
+                if (start == null) return false;
+                String endText = endField.getText();
+                if (endText == null || endText.isBlank()) return true;
+                LocalTime end = parseTimeInput(endText);
+                return end != null && end.isAfter(start);
+            }
+        };
+        Node okButton = dialog.getDialogPane().lookupButton(ButtonType.OK);
+        if (okButton != null) {
+            okButton.disableProperty().bind(complete.not());
+        }
+
+        dialog.setResultConverter(buttonType -> {
+            if (buttonType != ButtonType.OK) {
+                return null;
+            }
+            String code = codeCombo.getEditor().getText().trim().toUpperCase(Locale.ENGLISH);
+            String name = nameField.getText() != null && !nameField.getText().isBlank()
+                    ? nameField.getText().trim() : code;
+            String endText = endField.getText();
+            LocalTime end = endText == null || endText.isBlank() ? null : parseTimeInput(endText);
+            String sheetName = adding ? name
+                    : (row.getDatesheetCourseName() != null ? row.getDatesheetCourseName() : name);
+            return new DatesheetMatchRow(code, sheetName, name, typeCombo.getValue(),
+                    datePicker.getValue(), parseTimeInput(startField.getText()), end,
+                    adding ? "Added" : (row.getStatus() != null ? row.getStatus() : "Matched"));
+        });
+
+        dialog.showAndWait().ifPresent(edited -> {
+            if (adding) {
+                matchItems.add(edited);
+                matchTable.getSelectionModel().clearAndSelect(matchItems.indexOf(edited));
+                UiKit.toast(edited.getCourseCode() + " added to Matched subjects.");
+            } else {
+                row.setCourseCode(edited.getCourseCode());
+                row.setDatesheetCourseName(edited.getDatesheetCourseName());
+                row.setUserSubjectName(edited.getUserSubjectName());
+                row.setExamType(edited.getExamType());
+                row.setExamDate(edited.getExamDate());
+                row.setStartTime(edited.getStartTime());
+                row.setEndTime(edited.getEndTime());
+                matchTable.getSelectionModel().clearAndSelect(matchItems.indexOf(row));
+                UiKit.toast(row.getCourseCode() + " updated.");
+            }
+            matchTable.refresh();
+            recomputeUnmatched();
+            refreshSummaryRange();
+            if (cannotApply != null) {
+                cannotApply.invalidate();
+            }
+        });
     }
 
     // ------------------------------------------------------------------ analyse
@@ -538,8 +820,10 @@ public class DatesheetAnalyserView {
             lastAnalysedText = text;
 
             matchItems.setAll(result.getMatchedRows());
-            setUnmatched(result.getUnmatchedSubjects());
-            setExamDates(result.getMatchedRows());
+            analysedMatchCount = result.getMatchedRows().size();
+            analysedUnmatched.clear();
+            analysedUnmatched.addAll(result.getUnmatchedSubjects());
+            recomputeUnmatched();
             setClashes(result.getClashes());
             setNotices(result.getWarnings(), result.getClashes());
 
@@ -603,24 +887,10 @@ public class DatesheetAnalyserView {
                     .append(" · ")
                     .append(result.getExamType() != null && !result.getExamType().isBlank()
                             ? result.getExamType() : "exam type not chosen");
-            if (result.getFirstDate() != null) {
-                summary.append(" · sheet range ").append(result.getFirstDate().format(DATE_DISPLAY_FORMAT));
-                if (result.getLastDate() != null) {
-                    summary.append(" to ").append(result.getLastDate().format(DATE_DISPLAY_FORMAT));
-                }
-            }
-            summaryLabel.setText(summary.toString());
+            lastSummaryPrefix = summary.toString();
+            refreshSummaryRange();
 
-            statusLabel.getStyleClass().removeAll("text-danger", "text-success");
-            if (result.getMatchedRows().isEmpty()) {
-                statusLabel.setText("No subject codes from your active semester matched this datesheet.");
-                statusLabel.getStyleClass().add("text-danger");
-            } else {
-                statusLabel.setText(result.getMatchedRows().size() + " subject(s) matched and ready to apply."
-                        + (result.getAmbiguousCourses() > 0
-                        ? " Decide the ambiguous course(s) below before applying." : ""));
-                statusLabel.getStyleClass().add("text-success");
-            }
+            refreshStatusLine();
             if (cannotApply != null) {
                 cannotApply.invalidate();
             }
@@ -633,9 +903,12 @@ public class DatesheetAnalyserView {
     private void clearAll() {
         pasteArea.clear();
         matchItems.clear();
+        analysedMatchCount = 0;
+        analysedUnmatched.clear();
+        lastUnmatched.clear();
         setUnmatched(Collections.emptyList());
         setClashes(Collections.emptyList());
-        setExamDates(Collections.emptyList());
+        lastSummaryPrefix = null;
         setNotices(Collections.emptyList(), Collections.emptyList());
         summaryLabel.setText("No datesheet analysed yet.");
         statusLabel.setText("");

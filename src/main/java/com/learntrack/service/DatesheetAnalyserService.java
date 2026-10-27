@@ -123,13 +123,40 @@ public class DatesheetAnalyserService {
 
         List<DatesheetMatchRow> matchedRows = new ArrayList<>();
         Set<String> matchedSubjectCodes = new HashSet<>();
-        List<String> warnings = new ArrayList<>(parsed.getWarnings());
+        List<String> warnings = new ArrayList<>();
+        for (String w : parsed.getWarnings()) {
+            if (w == null || w.isBlank()) continue;
+            if (w.startsWith("Page ")) {
+                continue; // Drop page-level ambiguity notices about other pages
+            }
+            if (w.startsWith("Course ")) {
+                String rest = w.substring("Course ".length()).trim();
+                String code = rest.split("\\s+")[0];
+                if (findSubjectMatch(code, userSubjectMap) == null) {
+                    continue;
+                }
+            } else if (w.startsWith("Duplicate course code ignored: ")) {
+                String code = w.substring("Duplicate course code ignored: ".length()).trim();
+                if (findSubjectMatch(code, userSubjectMap) == null) {
+                    continue;
+                }
+            }
+            warnings.add(w);
+        }
 
         if (examType == null) {
             warnings.add("This datesheet does not name its exam type. Choose MST or EST before applying it.");
         }
 
-        if ("Column-block".equalsIgnoreCase(parsed.getFormatName()) && !parsed.getAmbiguous().isEmpty()) {
+        boolean userHasAmbiguousFromParsed = false;
+        for (String ambCode : parsed.getAmbiguous().keySet()) {
+            if (findSubjectMatch(ambCode, userSubjectMap) != null) {
+                userHasAmbiguousFromParsed = true;
+                break;
+            }
+        }
+
+        if ("Column-block".equalsIgnoreCase(parsed.getFormatName()) && userHasAmbiguousFromParsed) {
             warnings.add("This text came out of the PDF with its columns separated. Dates for some courses may be uncertain; choose the correct slot in 'Needs Your Decision', or paste text that keeps each row together (for example from pdftotext -layout).");
         }
 

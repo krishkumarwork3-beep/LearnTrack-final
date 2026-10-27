@@ -417,4 +417,58 @@ public class DatesheetAnalyserServiceTest {
         assertEquals(LocalTime.of(9, 0), ucs503Est.getExamStartTime());
         assertFalse(ucs503Est.isExamDateTentative());
     }
+
+    @Test
+    void testUserExamWindowAndWarningFiltering() throws SQLException {
+        String sheetWithIrrelevantWarnings =
+                "Date Sheet Code: EST-2026-ODD\n" +
+                "1 2026-12-01 09:00 AM ZZ101 INTRO TO OTHER\n" +
+                "2 2026-12-05 09:00 AM UCS503 SOFTWARE ENGINEERING\n" +
+                "3 2026-12-10 09:00 AM UCT301 NETWORK THEORY\n" +
+                "4 2026-12-25 09:00 AM ZZ999 LATE OTHER COURSE\n";
+
+        DatesheetAnalysisResult result = analyserService.analyse(semesterId, sheetWithIrrelevantWarnings, "EST");
+        // User's exams are on 5 Dec and 10 Dec; sheet runs 1 Dec to 25 Dec.
+        assertEquals(LocalDate.of(2026, 12, 1), result.getFirstDate());
+        assertEquals(LocalDate.of(2026, 12, 25), result.getLastDate());
+        assertEquals(LocalDate.of(2026, 12, 5), result.getUserFirstDate());
+        assertEquals(LocalDate.of(2026, 12, 10), result.getUserLastDate());
+
+        // Warnings for other courses or pages are dropped
+        for (String w : result.getWarnings()) {
+            assertFalse(w.startsWith("Page "), "Page-level warnings must be dropped");
+            assertFalse(w.contains("ZZ101") || w.contains("ZZ999"), "Warnings for non-user courses must be dropped");
+        }
+    }
+
+    @Test
+    void testSheetSpanning2To28DecGivesUserRange3To12DecAndNoOtherCourseWarnings() throws SQLException {
+        // The sheet runs 2 Dec - 28 Dec; only 3 Dec and 12 Dec belong to my subjects.
+        String datesheetText =
+                "Date Sheet Code: EST-2026-ODD\n" +
+                "1 2026-12-02 09:00 AM ZZ999 SOME OTHER BATCH COURSE\n" +
+                "2 2026-12-03 09:00 AM UCS503 SOFTWARE ENGINEERING\n" +
+                "3 2026-12-12 01:00 PM UCT301 NETWORK THEORY\n" +
+                "4 2026-12-28 09:00 AM ZZ998 LATER OTHER BATCH COURSE\n";
+
+        DatesheetAnalysisResult result = analyserService.analyse(semesterId, datesheetText, "EST");
+
+        // The sheet's own range is still reported
+        assertEquals(LocalDate.of(2026, 12, 2), result.getFirstDate());
+        assertEquals(LocalDate.of(2026, 12, 28), result.getLastDate());
+
+        // My range is 3 Dec - 12 Dec
+        assertEquals(LocalDate.of(2026, 12, 3), result.getUserFirstDate(),
+                "User range must start at my first exam");
+        assertEquals(LocalDate.of(2026, 12, 12), result.getUserLastDate(),
+                "User range must end at my last exam");
+        assertEquals(2, result.getMatchedRows().size());
+
+        // No warning may talk about courses that are not mine
+        for (String w : result.getWarnings()) {
+            assertFalse(w.startsWith("Page "), "Page-level warnings must be dropped: " + w);
+            assertFalse(w.contains("ZZ999") || w.contains("ZZ998"),
+                    "Warnings about other courses must be dropped: " + w);
+        }
+    }
 }

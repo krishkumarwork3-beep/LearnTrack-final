@@ -156,6 +156,22 @@ public class DatesheetAnalysisResult {
         return Collections.unmodifiableMap(ambiguous);
     }
 
+    public LocalDate getUserFirstDate() {
+        return matchedRows.stream()
+                .map(DatesheetMatchRow::getExamDate)
+                .filter(Objects::nonNull)
+                .min(LocalDate::compareTo)
+                .orElse(null);
+    }
+
+    public LocalDate getUserLastDate() {
+        return matchedRows.stream()
+                .map(DatesheetMatchRow::getExamDate)
+                .filter(Objects::nonNull)
+                .max(LocalDate::compareTo)
+                .orElse(null);
+    }
+
     /**
      * Returns ambiguous courses that match the user's subjects.
      * Key is the user's subject code, value is the list of candidate date/time slots.

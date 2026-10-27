@@ -698,9 +698,42 @@
     -fx-background-color: -lt-surface-alt;
 }
 
-.table-row-cell:filled:selected {
-    -fx-background-color: -lt-primary-soft;
+.table-row-cell:filled:selected,
+.table-row-cell:filled:selected:focused,
+.table-row-cell.row-selected,
+.table-row-cell.row-selected.day-row-fixed,
+.table-row-cell.row-selected.day-row-study,
+.table-row-cell.row-selected.day-row-done,
+.table-row-cell.row-selected.day-row-manual,
+.table-row-cell:filled:selected.day-row-fixed,
+.table-row-cell:filled:selected.day-row-study,
+.table-row-cell:filled:selected.day-row-done,
+.table-row-cell:filled:selected.day-row-manual,
+.table-row-cell.status-row-deficit-selected,
+.table-row-cell.status-row-tight-selected,
+.table-row-cell.status-row-fits-selected {
+    -fx-background-color: #d6e2ee;
+    -fx-border-color: transparent transparent -lt-border -lt-primary;
+    -fx-border-width: 0 0 1 3;
     -fx-text-background-color: -lt-text;
+}
+
+/*
+ * The picked row of the improvement dialog. It has to outrank the status-row backgrounds,
+ * which are declared later and would otherwise paint the chosen batch back to white.
+ */
+.pick-table .table-row-cell.row-picked,
+.pick-table .table-row-cell:filled:selected,
+.pick-table .table-row-cell:filled:selected:focused,
+.pick-table .table-row-cell:filled:selected:hover {
+    -fx-background-color: #c2d3e8;
+    -fx-border-color: transparent transparent transparent -lt-primary;
+    -fx-border-width: 0 0 0 3;
+}
+
+.pick-table .table-row-cell.row-picked .text,
+.pick-table .table-row-cell:filled:selected .text {
+    -fx-fill: -lt-text;
 }
 
 .table-cell {
@@ -755,15 +788,12 @@
     -fx-padding: 0 1 0 1;
 }
 
-/* A selected status row is marked the same way as any selected row. */
+/* Status rows for improvement recommendations */
 .table-row-cell.status-row-deficit,
 .table-row-cell.status-row-tight,
-.table-row-cell.status-row-fits,
-.table-row-cell.status-row-deficit-selected,
-.table-row-cell.status-row-tight-selected,
-.table-row-cell.status-row-fits-selected {
-    -fx-background-color: -lt-primary-soft;
-    -fx-text-background-color: -lt-text;
+.table-row-cell.status-row-fits {
+    -fx-background-color: -lt-surface;
+    -fx-text-background-color: -lt-text-body;
 }
 
 .table-cell.status-cell-deficit {
@@ -1377,6 +1407,13 @@
 .subject-item-selected {
     -fx-background-color: -lt-primary-soft;
     -fx-border-color: transparent transparent transparent -lt-primary;
+}
+
+/* The chosen category card matches the picked-row highlight from the improvement dialog. */
+.subject-item.row-picked {
+    -fx-background-color: #c2d3e8;
+    -fx-border-color: transparent transparent transparent -lt-primary;
+    -fx-border-width: 0 0 0 3;
 }
 
 .subject-item:focused {

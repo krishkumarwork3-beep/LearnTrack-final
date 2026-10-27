@@ -101,12 +101,21 @@ public class TopicFormController {
         searchField.setPromptText("Search by code or name…");
         searchField.textProperty().addListener((obs, oldV, newV) -> rebuildSubjectList());
 
+        Button btnAddSubject = UiKit.secondaryButton("Add");
+        btnAddSubject.setTooltip(new Tooltip(
+                "Add a subject that is not in your timetable but you still study or sit exams for."));
+        btnAddSubject.setOnAction(e -> handleAddSubject());
+
+        HBox searchRow = new HBox(8, searchField, btnAddSubject);
+        searchRow.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(searchField, Priority.ALWAYS);
+
         subjectListBox = new VBox(8);
         ScrollPane listScroll = new ScrollPane(subjectListBox);
         listScroll.setFitToWidth(true);
         VBox.setVgrow(listScroll, Priority.ALWAYS);
 
-        VBox leftPanel = new VBox(8, searchField, listScroll);
+        VBox leftPanel = new VBox(8, searchRow, listScroll);
         leftPanel.setMinWidth(260);
         leftPanel.setPrefWidth(300);
         leftPanel.setMaxWidth(340);
@@ -168,6 +177,83 @@ public class TopicFormController {
         } catch (SQLException e) {
             showError("Subjects could not be loaded", e.getMessage());
         }
+    }
+
+    /**
+     * Keeps a subject that has no timetable entry: it is stored as a kept subject, so it joins the
+     * subject list like any other and can carry syllabus, study sessions and exams.
+     */
+    private void handleAddSubject() {
+        if (activeSemesterId <= 0) {
+            showError("No active semester", "Create or activate a semester first.");
+            return;
+        }
+
+        Dialog<String[]> dialog = new Dialog<>();
+        dialog.setTitle("Add Subject");
+        dialog.setHeaderText("Add a subject kept for study and exams");
+        UiKit.styleDialog(dialog);
+
+        GridPane grid = new GridPane();
+        grid.setHgap(12);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(16));
+
+        TextField codeField = new TextField();
+        codeField.setPromptText("e.g. UEX101");
+        codeField.setPrefWidth(240);
+        TextField nameField = new TextField();
+        nameField.setPromptText("e.g. Engineering Graphics");
+        nameField.setPrefWidth(240);
+
+        Label codeLabel = new Label("Course code");
+        codeLabel.getStyleClass().add("subtle");
+        Label nameLabel = new Label("Subject name");
+        nameLabel.getStyleClass().add("subtle");
+
+        grid.addRow(0, codeLabel, codeField);
+        grid.addRow(1, nameLabel, nameField);
+        grid.addRow(2, new Label(), UiKit.hint(
+                "This subject has no entry in your timetable. It is kept for study and exams only, "
+                        + "like a subject you removed from the timetable. Leave the name blank to use the code."));
+
+        dialog.getDialogPane().setContent(grid);
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        Node okButton = dialog.getDialogPane().lookupButton(ButtonType.OK);
+        if (okButton != null) {
+            okButton.disableProperty().bind(codeField.textProperty().trim().isEmpty());
+        }
+        codeField.setOnAction(e -> {
+            Node ok = dialog.getDialogPane().lookupButton(ButtonType.OK);
+            if (ok instanceof Button) {
+                ((Button) ok).fire();
+            }
+        });
+
+        dialog.setResultConverter(buttonType -> buttonType == ButtonType.OK
+                ? new String[]{codeField.getText(), nameField.getText()}
+                : null);
+
+        dialog.showAndWait().ifPresent(data -> {
+            String code = data[0] == null ? "" : data[0].trim().toUpperCase(Locale.ENGLISH);
+            if (code.isEmpty()) {
+                return;
+            }
+            if (findSubject(code) != null) {
+                UiKit.toast(code + " is already in your subject list.", UiKit.Kind.WARN);
+                return;
+            }
+            String name = data[1] != null && !data[1].trim().isEmpty() ? data[1].trim() : code;
+            try {
+                KeptSubjectDAO.upsert(activeSemesterId, code, name);
+                selectedSubjectCode = code;
+                loadExams();
+                UiKit.toast(code + " added: kept for study and exams, not in your timetable.");
+            } catch (SQLException e) {
+                showError("The subject could not be added", e.getMessage());
+            }
+        });
     }
 
     private SubjectInfo findSubject(String code) {
@@ -254,7 +340,8 @@ public class TopicFormController {
         VBox item = new VBox(4, top, name, bar, progressLabel);
         item.getStyleClass().add("subject-item");
         if (subject.getSubjectCode().equalsIgnoreCase(selectedSubjectCode)) {
-            item.getStyleClass().add("subject-item-selected");
+            // Same highlight as the selected category card on the Exams tab.
+            item.getStyleClass().addAll("subject-item-selected", "row-selected", "row-picked");
         }
         item.setOnMouseClicked(e -> selectSubject(subject));
         // Keyboard users can reach the list with Tab and pick a subject with Enter or Space.

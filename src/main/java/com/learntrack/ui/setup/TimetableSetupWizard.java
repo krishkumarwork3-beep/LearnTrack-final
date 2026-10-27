@@ -136,6 +136,8 @@ public class TimetableSetupWizard {
     private boolean closeOnSave = true;
     private final Set<String> stagedRemovedSubjects = new LinkedHashSet<>();
     private final Map<String, String> stagedKeptSubjects = new LinkedHashMap<>();
+    /** Fingerprint of the state the last successful Save left behind; Undo restores exactly this. */
+    private String savedStateFingerprint;
 
     public TimetableSetupWizard(TimetableDAO timetableDAO, SemesterDAO semesterDAO,
                                 SemesterReplanService replanService,
@@ -194,12 +196,76 @@ public class TimetableSetupWizard {
         return buildBody(footerActions);
     }
 
-    /** Drops staged edits and reloads the tab for the active semester (used after rollover). */
+    /** Drops staged edits and reloads the tab for the active semester (after rollover, and on Undo). */
     public void reloadFromDb() {
         stagedRemovedSubjects.clear();
         stagedKeptSubjects.clear();
         loadExistingData();
         updateFreeHoursReview();
+    }
+
+    /**
+     * Undoes everything changed since the last successful Save timetable. The database still holds
+     * that save (the tab stages edits in memory), so the restore is a reload: Clear Batch and
+     * Clear Entire Week included, because neither writes anything while staged.
+     */
+    private void handleUndoToLastSave() {
+        if (!staged) {
+            return;
+        }
+        String current = stagedFingerprint();
+        if (savedStateFingerprint != null && savedStateFingerprint.equals(current)) {
+            UiKit.toast("Nothing to undo: nothing changed since the last save.", UiKit.Kind.WARN);
+            return;
+        }
+        boolean sure = UiKit.confirm(wizardStage, "Undo changes",
+                "Restore the timetable as it was at your last save?",
+                "Everything changed since the last Save timetable is discarded, including Clear Batch "
+                        + "and Clear Entire Week.",
+                "Undo");
+        if (!sure) {
+            return;
+        }
+        reloadFromDb();
+        UiKit.toast("Changes made since the last save were undone.");
+    }
+
+    /**
+     * Everything the tab stages, as one string: entries, wake/sleep, study hours, the import batch
+     * and the queued subject changes. Kept as text so editing an entry already in the list still
+     * counts as a difference.
+     */
+    private String stagedFingerprint() {
+        StringBuilder state = new StringBuilder();
+        List<WeeklyTimetableEntry> ordered = new ArrayList<>(entriesList);
+        ordered.sort(Comparator
+                .comparingInt((WeeklyTimetableEntry e) -> DAYS.indexOf(
+                        e.getDayOfWeek() != null ? e.getDayOfWeek().toUpperCase() : ""))
+                .thenComparing(ENTRY_TIME_COMPARATOR));
+        for (WeeklyTimetableEntry e : ordered) {
+            state.append(e.getDayOfWeek()).append('|')
+                    .append(e.getStartTime()).append('-').append(e.getEndTime()).append('|')
+                    .append(e.getActivityType()).append('|')
+                    .append(e.getLabel()).append('|')
+                    .append(e.getRoom()).append('|')
+                    .append(e.getSubjectCode()).append('|')
+                    .append(e.getEntryId()).append('\n');
+        }
+        for (String day : DAYS) {
+            TextField wake = perDayWakeFields.get(day);
+            TextField sleep = perDaySleepFields.get(day);
+            Spinner<Double> hours = studyHourSpinners.get(day);
+            state.append(day).append('|')
+                    .append(wake != null ? wake.getText() : null).append('-')
+                    .append(sleep != null ? sleep.getText() : null).append('|')
+                    .append(hours != null && hours.getValue() != null ? hours.getValue() : null)
+                    .append('\n');
+        }
+        state.append(importedBatch).append('|').append(importedSheet).append('|')
+                .append(importedFilePath).append('\n');
+        state.append(stagedRemovedSubjects).append('\n')
+                .append(stagedKeptSubjects).append('\n');
+        return state.toString();
     }
 
     private VBox buildBody(Node... footerActions) {
@@ -225,6 +291,16 @@ public class TimetableSetupWizard {
         Button save = UiKit.primaryButton("Save timetable");
         save.setOnAction(e -> saveAll());
 
+        Button undo = UiKit.secondaryButton("Undo");
+        undo.setTooltip(new Tooltip(
+                "Restore the timetable as it was the last time you saved: undoes Clear Batch, "
+                        + "Clear Entire Week and any other change made since that save."));
+        undo.setOnAction(e -> handleUndoToLastSave());
+        // Only the tab stages edits; the modal wizard writes straight to the database, where an
+        // undo would have to resurrect deleted subjects, so it does not offer one.
+        undo.setVisible(staged);
+        undo.setManaged(staged);
+
         HBox footer = new HBox(8);
         footer.setAlignment(Pos.CENTER_LEFT);
         if (footerActions != null) {
@@ -236,7 +312,7 @@ public class TimetableSetupWizard {
         }
         footer.getChildren().addAll(UiKit.spacer(),
                 UiKit.hint(staged ? "Changes stay on this screen until you save." : "Save applies the timetable and rebuilds the plan."),
-                save);
+                undo, save);
 
         VBox root = new VBox(12, tabPane, footer);
         root.setPadding(new Insets(16));
@@ -1084,6 +1160,8 @@ public class TimetableSetupWizard {
         }
         updateTabIndicators();
         updateButtonStates();
+        // The database is the state of the last save: remember it so Undo has a target.
+        savedStateFingerprint = stagedFingerprint();
     }
 
     private void saveAll() {
@@ -1177,6 +1255,7 @@ public class TimetableSetupWizard {
             if (staged) {
                 UiKit.toast("Timetable saved. The study plan was rebuilt.");
             }
+            savedStateFingerprint = stagedFingerprint();
         } catch (Exception ex) {
             showError("Save Error", "Failed to save timetable setup: " + ex.getMessage());
         }
@@ -2379,14 +2458,18 @@ public class TimetableSetupWizard {
 
         Map<Character, TableView<ComponentOption>> tableMap = new LinkedHashMap<>();
 
+        // Filled in once all four tables exist: "Clear selection" clears every table so the
+        // summary returns to "None selected." instead of leaving another tab still picked.
+        final Runnable[] clearAll = new Runnable[1];
+
         if (incLec) {
-            tabPane.getTabs().add(createTabForComponent('L', "Lecture", options.getOrDefault('L', List.of()), tableMap));
+            tabPane.getTabs().add(createTabForComponent('L', "Lecture", options.getOrDefault('L', List.of()), tableMap, clearAll));
         }
         if (incTut) {
-            tabPane.getTabs().add(createTabForComponent('T', "Tutorial", options.getOrDefault('T', List.of()), tableMap));
+            tabPane.getTabs().add(createTabForComponent('T', "Tutorial", options.getOrDefault('T', List.of()), tableMap, clearAll));
         }
         if (incPrac) {
-            tabPane.getTabs().add(createTabForComponent('P', "Practical", options.getOrDefault('P', List.of()), tableMap));
+            tabPane.getTabs().add(createTabForComponent('P', "Practical", options.getOrDefault('P', List.of()), tableMap, clearAll));
         }
 
         // Best Batch tab
@@ -2420,24 +2503,6 @@ public class TimetableSetupWizard {
 
         Node addBtnNode = dialog.getDialogPane().lookupButton(btnAdd);
         addBtnNode.setDisable(true);
-
-        // When Best Batch row is selected, update the component tables
-        bestBatchTable.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
-            if (newV != null) {
-                if (incLec && newV.getLecture() != null) {
-                    TableView<ComponentOption> lecTable = tableMap.get('L');
-                    if (lecTable != null) lecTable.getSelectionModel().select(newV.getLecture());
-                }
-                if (incTut && newV.getTutorial() != null) {
-                    TableView<ComponentOption> tutTable = tableMap.get('T');
-                    if (tutTable != null) tutTable.getSelectionModel().select(newV.getTutorial());
-                }
-                if (incPrac && newV.getPractical() != null) {
-                    TableView<ComponentOption> pracTable = tableMap.get('P');
-                    if (pracTable != null) pracTable.getSelectionModel().select(newV.getPractical());
-                }
-            }
-        });
 
         Runnable updateSummary = () -> {
             List<ComponentOption> chosen = new ArrayList<>();
@@ -2479,6 +2544,42 @@ public class TimetableSetupWizard {
             }
         };
 
+        clearAll[0] = () -> {
+            for (TableView<ComponentOption> tv : tableMap.values()) {
+                tv.getSelectionModel().clearSelection();
+            }
+            bestBatchTable.getSelectionModel().clearSelection();
+            updateSummary.run();
+        };
+
+        // When Best Batch row is selected, update the component tables and summary
+        bestBatchTable.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
+            if (newV != null) {
+                if (incLec && newV.getLecture() != null) {
+                    TableView<ComponentOption> lecTable = tableMap.get('L');
+                    if (lecTable != null) {
+                        lecTable.getSelectionModel().select(newV.getLecture());
+                        lecTable.scrollTo(newV.getLecture());
+                    }
+                }
+                if (incTut && newV.getTutorial() != null) {
+                    TableView<ComponentOption> tutTable = tableMap.get('T');
+                    if (tutTable != null) {
+                        tutTable.getSelectionModel().select(newV.getTutorial());
+                        tutTable.scrollTo(newV.getTutorial());
+                    }
+                }
+                if (incPrac && newV.getPractical() != null) {
+                    TableView<ComponentOption> pracTable = tableMap.get('P');
+                    if (pracTable != null) {
+                        pracTable.getSelectionModel().select(newV.getPractical());
+                        pracTable.scrollTo(newV.getPractical());
+                    }
+                }
+            }
+            updateSummary.run();
+        });
+
         for (TableView<ComponentOption> tv : tableMap.values()) {
             tv.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> updateSummary.run());
         }
@@ -2496,14 +2597,20 @@ public class TimetableSetupWizard {
 
     private Tab createTabForComponent(
             char compChar, String compName, List<ComponentOption> items,
-            Map<Character, TableView<ComponentOption>> tableMap) {
+            Map<Character, TableView<ComponentOption>> tableMap, Runnable[] clearAll) {
 
         TableView<ComponentOption> table = createComponentTableView(items);
         tableMap.put(compChar, table);
 
         Button btnClear = new Button("Clear selection");
 
-        btnClear.setOnAction(e -> table.getSelectionModel().clearSelection());
+        btnClear.setOnAction(e -> {
+            if (clearAll[0] != null) {
+                clearAll[0].run();
+            } else {
+                table.getSelectionModel().clearSelection();
+            }
+        });
 
         HBox topBar = new HBox(btnClear);
         topBar.setAlignment(Pos.CENTER_RIGHT);
@@ -2520,6 +2627,7 @@ public class TimetableSetupWizard {
         TableView<ComponentOption> table = new TableView<>(FXCollections.observableArrayList(items));
         table.setPrefHeight(280);
         table.setPrefWidth(820);
+        table.getStyleClass().add("pick-table");
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         table.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
 
@@ -2571,14 +2679,20 @@ public class TimetableSetupWizard {
 
         table.getColumns().addAll(colSheet, colBatch, colSlots, colRoom, colConflicts, colStatus);
 
+        // row-picked mirrors the selection so the chosen batch stays obvious even when the
+        // table itself has lost focus (another tab, or a click in the summary).
         table.setRowFactory(tv -> new TableRow<>() {
             {
-                selectedProperty().addListener((obs, oldV, isSel) -> applyRowStyle(this, getItem(), isEmpty(), isSel));
+                selectedProperty().addListener((obs, oldV, isSel) -> {
+                    applyRowStyle(this, getItem(), isEmpty(), isSel);
+                    togglePicked(this, isSel);
+                });
             }
             @Override
             protected void updateItem(ComponentOption item, boolean empty) {
                 super.updateItem(item, empty);
                 applyRowStyle(this, item, empty, isSelected());
+                togglePicked(this, isSelected());
             }
         });
 
@@ -2588,6 +2702,7 @@ public class TimetableSetupWizard {
     private TableView<BestBatchOption> createBestBatchTableView(List<BestBatchOption> items) {
         TableView<BestBatchOption> table = new TableView<>(FXCollections.observableArrayList(items));
         table.setPrefHeight(280);
+        table.getStyleClass().add("pick-table");
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         table.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
 
@@ -2645,10 +2760,24 @@ public class TimetableSetupWizard {
                 colLecConf, colTutConf, colPracConf, colRooms, colTotal);
 
         table.setRowFactory(tv -> new TableRow<>() {
+            {
+                selectedProperty().addListener((obs, oldV, isSel) -> {
+                    if (isSel) {
+                        if (!getStyleClass().contains("row-selected")) getStyleClass().add("row-selected");
+                    } else {
+                        getStyleClass().remove("row-selected");
+                    }
+                    togglePicked(this, isSel);
+                });
+            }
             @Override
             protected void updateItem(BestBatchOption item, boolean empty) {
                 super.updateItem(item, empty);
-                getStyleClass().removeAll("status-row-deficit", "status-row-tight", "status-row-fits");
+                getStyleClass().removeAll("status-row-deficit", "status-row-tight", "status-row-fits", "row-selected");
+                if (isSelected()) {
+                    getStyleClass().add("row-selected");
+                }
+                togglePicked(this, isSelected());
                 if (empty || item == null) {
                     return;
                 }
@@ -2665,25 +2794,49 @@ public class TimetableSetupWizard {
         return table;
     }
 
+    /** Adds or removes the strong pick highlight; kept separate so both row types share it. */
+    private static void togglePicked(TableRow<?> row, boolean picked) {
+        if (picked) {
+            if (!row.getStyleClass().contains("row-picked")) {
+                row.getStyleClass().add("row-picked");
+            }
+        } else {
+            row.getStyleClass().remove("row-picked");
+        }
+    }
+
     private void applyRowStyle(TableRow<ComponentOption> row, ComponentOption item, boolean empty, boolean isSel) {
         row.getStyleClass().removeAll(
                 "status-row-deficit", "status-row-tight", "status-row-fits",
-                "status-row-deficit-selected", "status-row-tight-selected", "status-row-fits-selected");
+                "status-row-deficit-selected", "status-row-tight-selected", "status-row-fits-selected",
+                "row-selected");
         if (empty || item == null) {
             row.setDisable(false);
             row.setTooltip(null);
         } else if (item.isConflicts()) {
             row.setDisable(false);  // Allow selection even with conflicts
             row.setTooltip(new Tooltip(item.getStatus()));
-            row.getStyleClass().add(isSel ? "status-row-deficit-selected" : "status-row-deficit");
+            if (isSel) {
+                row.getStyleClass().addAll("status-row-deficit-selected", "row-selected");
+            } else {
+                row.getStyleClass().add("status-row-deficit");
+            }
         } else if (item.isNeedsAdjustment()) {
             row.setDisable(false);
             row.setTooltip(new Tooltip(item.getStatus()));
-            row.getStyleClass().add(isSel ? "status-row-tight-selected" : "status-row-tight");
+            if (isSel) {
+                row.getStyleClass().addAll("status-row-tight-selected", "row-selected");
+            } else {
+                row.getStyleClass().add("status-row-tight");
+            }
         } else { // fits
             row.setDisable(false);
             row.setTooltip(new Tooltip("Fits your timetable"));
-            row.getStyleClass().add(isSel ? "status-row-fits-selected" : "status-row-fits");
+            if (isSel) {
+                row.getStyleClass().addAll("status-row-fits-selected", "row-selected");
+            } else {
+                row.getStyleClass().add("status-row-fits");
+            }
         }
     }
 

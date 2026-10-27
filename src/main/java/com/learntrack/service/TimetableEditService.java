@@ -172,6 +172,17 @@ public class TimetableEditService {
         if (log == null) {
             throw new IllegalArgumentException("Session #" + logId + " not found.");
         }
+        return resizeSession(semesterId, date, logId, log.getSlotStart(), newEnd);
+    }
+
+    /**
+     * Resizes a session slot on the given date to explicit newStart and newEnd times.
+     */
+    public String resizeSession(int semesterId, LocalDate date, int logId, LocalTime newStart, LocalTime newEnd) throws SQLException, IllegalArgumentException {
+        DailyLogEntry log = dailyLogDAO.findById(logId);
+        if (log == null) {
+            throw new IllegalArgumentException("Session #" + logId + " not found.");
+        }
 
         if (!log.getLogDate().equals(date)) {
             throw new IllegalArgumentException("Session must be scheduled on date " + date + ".");
@@ -182,15 +193,14 @@ public class TimetableEditService {
                     "'. Only PENDING or MANUAL sessions can be resized.");
         }
 
-        LocalTime start = log.getSlotStart();
-        if (start == null) {
-            throw new IllegalArgumentException("Session does not have a scheduled start time.");
+        if (newStart == null) {
+            throw new IllegalArgumentException("Session start time must not be null.");
         }
-        if (newEnd == null || !newEnd.isAfter(start)) {
-            throw new IllegalArgumentException("New end time must be after slot start time (" + start + ").");
+        if (newEnd == null || !newEnd.isAfter(newStart)) {
+            throw new IllegalArgumentException("New end time must be after slot start time (" + newStart + ").");
         }
 
-        double durationHours = Duration.between(start, newEnd).toMinutes() / 60.0;
+        double durationHours = Duration.between(newStart, newEnd).toMinutes() / 60.0;
         if (durationHours < 0.25 || durationHours > 8.0) {
             throw new IllegalArgumentException("Session duration must be between 0.25 and 8.0 hours (requested: " +
                     String.format("%.2f", durationHours) + " h).");
@@ -200,10 +210,10 @@ public class TimetableEditService {
         List<DailyLogEntry> todayLogs = dailyLogDAO.findByDate(date);
         for (DailyLogEntry other : todayLogs) {
             if (!other.getLogId().equals(logId) && other.getSlotStart() != null && other.getSlotEnd() != null) {
-                if (start.isBefore(other.getSlotEnd()) && newEnd.isAfter(other.getSlotStart())) {
+                if (newStart.isBefore(other.getSlotEnd()) && newEnd.isAfter(other.getSlotStart())) {
                     throw new IllegalArgumentException(String.format(
                             "Resized session [%s - %s] overlaps with existing scheduled session [%s - %s].",
-                            start, newEnd, other.getSlotStart(), other.getSlotEnd()
+                            newStart, newEnd, other.getSlotStart(), other.getSlotEnd()
                     ));
                 }
             }
@@ -213,7 +223,7 @@ public class TimetableEditService {
         List<FreeSlot> freeSlots = getBaseFreeSlots(semesterId, date);
         boolean fitsInsideFreeSlot = false;
         for (FreeSlot fs : freeSlots) {
-            if (!start.isBefore(fs.getStart()) && !newEnd.isAfter(fs.getEnd())) {
+            if (!newStart.isBefore(fs.getStart()) && !newEnd.isAfter(fs.getEnd())) {
                 fitsInsideFreeSlot = true;
                 break;
             }
@@ -221,11 +231,12 @@ public class TimetableEditService {
         if (!fitsInsideFreeSlot) {
             throw new IllegalArgumentException(String.format(
                     "Resized session [%s - %s] extends into fixed commitments or exam buffer. Must fit inside available free time.",
-                    start, newEnd
+                    newStart, newEnd
             ));
         }
 
         // Update the log after validation passes
+        log.setSlotStart(newStart);
         log.setSlotEnd(newEnd);
         log.setStatus("MANUAL");
         dailyLogDAO.update(log);

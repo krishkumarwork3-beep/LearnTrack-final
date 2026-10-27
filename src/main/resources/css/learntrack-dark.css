@@ -85,8 +85,8 @@
     -fx-accent: -lt-primary;
     -fx-focus-color: -lt-primary;
     -fx-faint-focus-color: transparent;
-    -fx-selection-bar: -lt-primary-soft;
-    -fx-selection-bar-non-focused: -lt-surface-sunken;
+    -fx-selection-bar: #233e30;
+    -fx-selection-bar-non-focused: #233e30;
     -fx-selection-bar-text: -lt-text;
     -fx-default-button: -lt-on-primary;
     -fx-highlight-fill: -lt-primary;
@@ -218,6 +218,60 @@
 .table-row-cell.day-row-study {
     -fx-border-color: transparent transparent -lt-hairline -lt-row-study;
     -fx-border-width: 0 0 1 3;
+}
+
+.table-row-cell:filled:selected,
+.table-row-cell:filled:selected:focused,
+.table-row-cell:filled:selected:hover,
+.table-row-cell.row-selected,
+.table-row-cell.row-selected.day-row-fixed,
+.table-row-cell.row-selected.day-row-study,
+.table-row-cell.row-selected.day-row-done,
+.table-row-cell.row-selected.day-row-manual,
+.table-row-cell:filled:selected.day-row-fixed,
+.table-row-cell:filled:selected.day-row-study,
+.table-row-cell:filled:selected.day-row-done,
+.table-row-cell:filled:selected.day-row-manual,
+.table-row-cell.status-row-deficit-selected,
+.table-row-cell.status-row-tight-selected,
+.table-row-cell.status-row-fits-selected {
+    -fx-background-color: #233e30;
+    -fx-border-color: transparent transparent -lt-hairline -lt-primary;
+    -fx-border-width: 0 0 1 3;
+    -fx-text-background-color: -lt-text;
+}
+
+.table-row-cell.status-row-deficit,
+.table-row-cell.status-row-tight,
+.table-row-cell.status-row-fits {
+    -fx-background-color: -lt-surface;
+    -fx-text-background-color: -lt-text-body;
+}
+
+/*
+ * The picked row of the improvement dialog: a stronger sage tint with the 3px accent bar.
+ * It has to outrank the status-row backgrounds, which are declared later and would otherwise
+ * paint the chosen batch back to the panel colour.
+ */
+.pick-table .table-row-cell.row-picked,
+.pick-table .table-row-cell:filled:selected,
+.pick-table .table-row-cell:filled:selected:focused,
+.pick-table .table-row-cell:filled:selected:hover {
+    -fx-background-color: #2C5040;
+    -fx-border-color: transparent transparent transparent -lt-primary;
+    -fx-border-width: 0 0 0 3;
+}
+
+.pick-table .table-row-cell.row-picked .text,
+.pick-table .table-row-cell:filled:selected .text {
+    -fx-fill: -lt-text;
+}
+
+/* The chosen category card on the Exams tab uses the same highlight. */
+.subject-item.row-picked {
+    -fx-background-color: #2C5040;
+    -fx-border-color: transparent transparent transparent -lt-primary;
+    -fx-border-width: 0 0 0 3;
 }
 
 .summary-row,

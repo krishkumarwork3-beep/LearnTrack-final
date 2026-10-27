@@ -436,4 +436,70 @@ public class TimetableEditServiceTest {
         // Scheduled hours should be identical after both runs
         assertEquals(totalScheduled1, totalScheduled2, 0.01, "Scheduled hours must be identical after both replans");
     }
+
+    @Test
+    void testResizeSessionWithStartAndEnd_Success() throws SQLException {
+        DailyLogEntry log = new DailyLogEntry(null, today, "TOPIC_LEARN", 101,
+                LocalTime.of(8, 0), LocalTime.of(10, 0), "PENDING");
+        int logId = dailyLogDAO.insert(log);
+
+        timetableEditService.resizeSession(semesterId, today, logId, LocalTime.of(8, 30), LocalTime.of(10, 30));
+
+        DailyLogEntry updated = dailyLogDAO.findById(logId);
+        assertNotNull(updated);
+        assertEquals(LocalTime.of(8, 30), updated.getSlotStart());
+        assertEquals(LocalTime.of(10, 30), updated.getSlotEnd());
+        assertEquals(2.0, updated.getDurationHours(), 0.01);
+    }
+
+    @Test
+    void testResizeSessionWithStartAndEnd_Validations() throws SQLException {
+        DailyLogEntry log1 = new DailyLogEntry(null, today, "TOPIC_LEARN", 101,
+                LocalTime.of(8, 0), LocalTime.of(10, 0), "PENDING");
+        int log1Id = dailyLogDAO.insert(log1);
+
+        DailyLogEntry log2 = new DailyLogEntry(null, today, "TOPIC_LEARN", 102,
+                LocalTime.of(11, 0), LocalTime.of(12, 0), "PENDING");
+        dailyLogDAO.insert(log2);
+
+        // End <= start
+        assertThrows(IllegalArgumentException.class, () ->
+                timetableEditService.resizeSession(semesterId, today, log1Id, LocalTime.of(10, 0), LocalTime.of(9, 0)));
+
+        // Duration < 15 min
+        assertThrows(IllegalArgumentException.class, () ->
+                timetableEditService.resizeSession(semesterId, today, log1Id, LocalTime.of(8, 0), LocalTime.of(8, 10)));
+
+        // Duration > 8 hours
+        assertThrows(IllegalArgumentException.class, () ->
+                timetableEditService.resizeSession(semesterId, today, log1Id, LocalTime.of(8, 0), LocalTime.of(16, 30)));
+
+        // Overlapping with log2 (11:00-12:00)
+        assertThrows(IllegalArgumentException.class, () ->
+                timetableEditService.resizeSession(semesterId, today, log1Id, LocalTime.of(10, 0), LocalTime.of(11, 30)));
+    }
+
+    @Test
+    void testResizeSessionWithStartAndEnd_RejectsRangeOutsideFreeTime() throws SQLException {
+        // Free slots are [07:00-13:00] and [15:00-23:00]; the class owns [13:00-15:00].
+        DailyLogEntry log = new DailyLogEntry(null, today, "TOPIC_LEARN", 101,
+                LocalTime.of(8, 0), LocalTime.of(10, 0), "PENDING");
+        int logId = dailyLogDAO.insert(log);
+
+        // 12:00 - 14:00 spills into the 13:00 - 15:00 class: not inside any free slot
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                timetableEditService.resizeSession(semesterId, today, logId, LocalTime.of(12, 0), LocalTime.of(14, 0)));
+        assertTrue(ex.getMessage().toLowerCase().contains("free time"),
+                "The rejection must explain that the range is outside free time: " + ex.getMessage());
+
+        // And a range entirely inside the class is rejected too
+        assertThrows(IllegalArgumentException.class, () ->
+                timetableEditService.resizeSession(semesterId, today, logId, LocalTime.of(13, 30), LocalTime.of(14, 30)));
+
+        // The session is untouched after both rejections
+        DailyLogEntry unchanged = dailyLogDAO.findById(logId);
+        assertEquals(LocalTime.of(8, 0), unchanged.getSlotStart());
+        assertEquals(LocalTime.of(10, 0), unchanged.getSlotEnd());
+        assertEquals("PENDING", unchanged.getStatus());
+    }
 }

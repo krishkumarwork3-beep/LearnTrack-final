@@ -16,6 +16,7 @@ public class DayRow {
     private DailyLogEntry dailyLogEntry; // nullable
     private boolean fixed;
     private Integer timetableEntryId; // nullable, set for CLASS, LAB, TUTORIAL rows
+    private Integer dateOverrideId; // nullable, set for date_overrides rows
     private boolean cancelled; // true if this commitment was cancelled on this date
 
     public DayRow() {
@@ -84,6 +85,14 @@ public class DayRow {
 
     public void setTimetableEntryId(Integer timetableEntryId) {
         this.timetableEntryId = timetableEntryId;
+    }
+
+    public Integer getDateOverrideId() {
+        return dateOverrideId;
+    }
+
+    public void setDateOverrideId(Integer dateOverrideId) {
+        this.dateOverrideId = dateOverrideId;
     }
 
     public boolean isCancelled() {

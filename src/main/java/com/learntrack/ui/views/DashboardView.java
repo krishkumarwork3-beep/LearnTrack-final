@@ -13,6 +13,7 @@ import com.learntrack.ui.UiKit;
 import com.learntrack.ui.charts.FeasibilityBarView;
 import com.learntrack.util.DateUtils;
 import com.learntrack.util.DurationFormat;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -20,10 +21,13 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 
 import java.sql.SQLException;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -67,6 +71,8 @@ public class DashboardView {
     private boolean undatedExpanded;
     private Button btnResize;
     private Button btnCancelClass;
+    private Button btnHoliday;
+    private Button btnCancelSession;
     private final SkillSubtopicDAO skillSubtopicDAO;
     private final SkillProgressService skillProgressService;
 
@@ -215,7 +221,7 @@ public class DashboardView {
         }
         dayScheduleView.getSelectedItems().addListener((javafx.collections.ListChangeListener<DayRow>) c -> updateToolbarButtons());
 
-        // Action Toolbar: only [Resize Selected Sessions] [Cancel Selected Class]
+        // Action Toolbar: [Resize sessions] [Cancel class] [Holiday] [Cancel session]
         HBox toolbar = new HBox(8);
         toolbar.setAlignment(Pos.CENTER_LEFT);
 
@@ -227,7 +233,15 @@ public class DashboardView {
         btnCancelClass.setTooltip(new Tooltip("Cancel recurring class on " + DateUtils.formatDate(selectedDate) + " only"));
         btnCancelClass.setOnAction(e -> handleCancelOrRestoreClass());
 
-        toolbar.getChildren().addAll(btnResize, btnCancelClass);
+        btnHoliday = UiKit.dangerTextButton("Holiday");
+        btnHoliday.setTooltip(new Tooltip("Mark " + DateUtils.formatDate(selectedDate) + " as a holiday (cancel all classes)"));
+        btnHoliday.setOnAction(e -> handleHoliday());
+
+        btnCancelSession = UiKit.dangerTextButton("Cancel session");
+        btnCancelSession.setTooltip(new Tooltip("Cancel selected study session on " + DateUtils.formatDate(selectedDate)));
+        btnCancelSession.setOnAction(e -> handleCancelOrRestoreSession());
+
+        toolbar.getChildren().addAll(btnResize, btnCancelClass, btnHoliday, btnCancelSession);
 
         Label hintLabel = UiKit.hint("Tick = done. Double-click a session to log partial progress.");
         hintLabel.getStyleClass().add("hint-compact");
@@ -742,32 +756,83 @@ public class DashboardView {
     }
 
     private void updateToolbarButtons() {
-        if (btnResize == null || btnCancelClass == null) return;
+        if (btnResize == null || btnCancelClass == null || btnHoliday == null || btnCancelSession == null) return;
         boolean isBusy = replanRunner != null && replanRunner.busyProperty().get();
         List<DayRow> selected = dayScheduleView != null ? dayScheduleView.getSelectedItems() : List.of();
+        List<DayRow> allRows = dayScheduleView != null ? dayScheduleView.getItems() : List.of();
 
+        // 1. Resize button
         boolean hasResizable = selected.stream().anyMatch(r ->
-                (!r.isFixed() && r.getDailyLogEntry() != null
+                (!r.isFixed() && !r.isCancelled() && r.getDailyLogEntry() != null
                         && !"DONE".equalsIgnoreCase(r.getDailyLogEntry().getStatus()))
                         || isResizableFixed(r)
         );
         btnResize.setDisable(isBusy || !hasResizable);
 
-        List<DayRow> cancellableSelected = selected.stream().filter(this::isCancellableClass).toList();
-        boolean hasCancellable = !cancellableSelected.isEmpty();
+        // 2. Cancel / Restore class button
+        List<DayRow> cancellableClasses = selected.stream().filter(this::isCancellableClass).toList();
+        boolean hasCancellableClasses = !cancellableClasses.isEmpty();
 
-        if (hasCancellable && cancellableSelected.stream().allMatch(DayRow::isCancelled)) {
-            btnCancelClass.setText("Restore Selected Class");
+        if (hasCancellableClasses && cancellableClasses.stream().allMatch(DayRow::isCancelled)) {
+            btnCancelClass.setText(cancellableClasses.size() > 1 ? "Restore Selected Classes" : "Restore class");
             btnCancelClass.getStyleClass().removeAll("btn-danger", "btn-primary");
             btnCancelClass.getStyleClass().add("btn-primary");
             btnCancelClass.setTooltip(new Tooltip("Restore selected cancelled class on " + DateUtils.formatDate(selectedDate)));
         } else {
-            btnCancelClass.setText("Cancel class");
+            btnCancelClass.setText(cancellableClasses.size() > 1 ? "Cancel Selected Classes" : "Cancel class");
             btnCancelClass.getStyleClass().removeAll("btn-danger", "btn-primary");
             btnCancelClass.getStyleClass().add("btn-danger");
             btnCancelClass.setTooltip(new Tooltip("Cancel recurring class on " + DateUtils.formatDate(selectedDate) + " only"));
         }
-        btnCancelClass.setDisable(isBusy || !hasCancellable);
+        btnCancelClass.setDisable(isBusy || !hasCancellableClasses);
+
+        // 3. Holiday button (cancels all classes on the day, no selection required)
+        List<DayRow> allClasses = allRows.stream().filter(this::isCancellableClass).toList();
+        if (allClasses.isEmpty()) {
+            btnHoliday.setText("Holiday");
+            btnHoliday.getStyleClass().removeAll("btn-danger", "btn-primary");
+            btnHoliday.getStyleClass().add("btn-danger");
+            btnHoliday.setTooltip(new Tooltip("No classes scheduled on " + DateUtils.formatDate(selectedDate)));
+            btnHoliday.setDisable(true);
+        } else {
+            boolean allCancelled = allClasses.stream().allMatch(DayRow::isCancelled);
+            if (allCancelled) {
+                btnHoliday.setText("Remove holiday");
+                btnHoliday.getStyleClass().removeAll("btn-danger", "btn-primary");
+                btnHoliday.getStyleClass().add("btn-primary");
+                btnHoliday.setTooltip(new Tooltip("Restore all cancelled classes on " + DateUtils.formatDate(selectedDate)));
+            } else {
+                btnHoliday.setText("Holiday");
+                btnHoliday.getStyleClass().removeAll("btn-danger", "btn-primary");
+                btnHoliday.getStyleClass().add("btn-danger");
+                btnHoliday.setTooltip(new Tooltip("Mark " + DateUtils.formatDate(selectedDate) + " as a holiday"));
+            }
+            btnHoliday.setDisable(isBusy);
+        }
+
+        // 4. Cancel / Restore study session button
+        List<DayRow> cancellableSessions = selected.stream().filter(this::isCancellableStudySession).toList();
+        List<DayRow> cancelledSessions = selected.stream().filter(this::isCancelledStudySession).toList();
+
+        if (!cancelledSessions.isEmpty() && cancelledSessions.size() == selected.size()) {
+            btnCancelSession.setText(cancelledSessions.size() > 1 ? "Restore Selected Sessions" : "Restore session");
+            btnCancelSession.getStyleClass().removeAll("btn-danger", "btn-primary");
+            btnCancelSession.getStyleClass().add("btn-primary");
+            btnCancelSession.setTooltip(new Tooltip("Restore selected cancelled session on " + DateUtils.formatDate(selectedDate)));
+            btnCancelSession.setDisable(isBusy);
+        } else if (!cancellableSessions.isEmpty() && cancellableSessions.size() == selected.size()) {
+            btnCancelSession.setText(cancellableSessions.size() > 1 ? "Cancel Selected Sessions" : "Cancel session");
+            btnCancelSession.getStyleClass().removeAll("btn-danger", "btn-primary");
+            btnCancelSession.getStyleClass().add("btn-danger");
+            btnCancelSession.setTooltip(new Tooltip("Cancel selected study session on " + DateUtils.formatDate(selectedDate)));
+            btnCancelSession.setDisable(isBusy);
+        } else {
+            btnCancelSession.setText("Cancel session");
+            btnCancelSession.getStyleClass().removeAll("btn-danger", "btn-primary");
+            btnCancelSession.getStyleClass().add("btn-danger");
+            btnCancelSession.setTooltip(new Tooltip("Cancel selected study session on " + DateUtils.formatDate(selectedDate)));
+            btnCancelSession.setDisable(true);
+        }
     }
 
     private boolean isCancellableClass(DayRow r) {
@@ -777,10 +842,183 @@ public class DashboardView {
                 && r.getTimetableEntryId() != null;
     }
 
+    private boolean isCancellableStudySession(DayRow r) {
+        return r != null && !r.isFixed() && !r.isCancelled() && r.getDailyLogEntry() != null
+                && !"DONE".equalsIgnoreCase(r.getDailyLogEntry().getStatus());
+    }
+
+    private boolean isCancelledStudySession(DayRow r) {
+        return r != null && r.isCancelled() && "Cancelled session".equalsIgnoreCase(r.getLabel());
+    }
+
     /** A class, lab or tutorial occurrence can be resized for this day only. */
     private boolean isResizableFixed(DayRow r) {
         return r != null && r.isFixed() && !r.isCancelled() && isCancellableClass(r)
                 && r.getStart() != null;
+    }
+
+    private void handleHoliday() {
+        if (dayScheduleView == null) return;
+        List<DayRow> allClasses = dayScheduleView.getItems().stream().filter(this::isCancellableClass).toList();
+        if (allClasses.isEmpty()) {
+            showAlert(Alert.AlertType.INFORMATION, "No Classes", "No classes scheduled on " + DateUtils.formatDate(selectedDate) + ".");
+            return;
+        }
+
+        try {
+            Semester active = semesterDAO.getActiveSemester();
+            if (active == null || active.getSemesterId() == null) {
+                showAlert(Alert.AlertType.INFORMATION, "No Semester", "No active semester.");
+                return;
+            }
+            int semId = active.getSemesterId();
+            boolean allCancelled = allClasses.stream().allMatch(DayRow::isCancelled);
+
+            if (allCancelled) {
+                Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+                UiKit.styleDialog(confirm);
+                confirm.setTitle("Remove Holiday");
+                confirm.setHeaderText("Remove holiday on " + DateUtils.formatDate(selectedDate) + "?");
+                confirm.setContentText("Restore all " + allClasses.size() + " classes on " + DateUtils.formatDate(selectedDate) + "?\nThey will be reinstated in your timetable.");
+                ButtonType btnRestore = new ButtonType("Remove holiday", ButtonBar.ButtonData.YES);
+                ButtonType btnKeep = new ButtonType("Keep holiday", ButtonBar.ButtonData.CANCEL_CLOSE);
+                confirm.getButtonTypes().setAll(btnRestore, btnKeep);
+
+                Optional<ButtonType> res = confirm.showAndWait();
+                if (res.isPresent() && res.get() == btnRestore) {
+                    for (DayRow r : allClasses) {
+                        if (r.getTimetableEntryId() != null) {
+                            semesterService.recordRemoveCancellation(selectedDate, r.getTimetableEntryId());
+                        }
+                    }
+                    runReplanAndRefresh(semId);
+                }
+            } else {
+                List<DayRow> toCancel = allClasses.stream()
+                        .filter(r -> !r.isCancelled())
+                        .filter(r -> !(selectedDate.equals(LocalDate.now()) && r.getEnd() != null && r.getEnd().isBefore(LocalTime.now())))
+                        .toList();
+
+                if (toCancel.isEmpty()) {
+                    showAlert(Alert.AlertType.INFORMATION, "No Classes to Cancel",
+                            "All classes on " + DateUtils.formatDate(selectedDate) + " have already ended today or are already cancelled.");
+                    return;
+                }
+
+                Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+                UiKit.styleDialog(confirm);
+                confirm.setTitle("Holiday");
+                confirm.setHeaderText("Mark " + DateUtils.formatDate(selectedDate) + " as a holiday?");
+                confirm.setContentText(String.format("Mark %s as a holiday? %d classes will be cancelled for this date only. Timetable unchanged on other dates.",
+                        DateUtils.formatDate(selectedDate), toCancel.size()));
+                ButtonType btnMark = new ButtonType("Mark Holiday", ButtonBar.ButtonData.YES);
+                ButtonType btnCancel = new ButtonType("Keep", ButtonBar.ButtonData.CANCEL_CLOSE);
+                confirm.getButtonTypes().setAll(btnMark, btnCancel);
+
+                Optional<ButtonType> res = confirm.showAndWait();
+                if (res.isPresent() && res.get() == btnMark) {
+                    for (DayRow r : toCancel) {
+                        if (r.getTimetableEntryId() != null) {
+                            semesterService.recordCancellation(selectedDate, r.getTimetableEntryId());
+                        }
+                    }
+                    runReplanAndRefresh(semId);
+                }
+            }
+        } catch (SQLException ex) {
+            showAlert(Alert.AlertType.ERROR, "Error", ex.getMessage());
+        }
+    }
+
+    private void handleCancelOrRestoreSession() {
+        List<DayRow> selected = new ArrayList<>(dayScheduleView.getSelectedItems());
+        if (selected.isEmpty()) return;
+
+        List<DayRow> cancellable = selected.stream().filter(this::isCancellableStudySession).toList();
+        List<DayRow> cancelled = selected.stream().filter(this::isCancelledStudySession).toList();
+
+        try {
+            Semester active = semesterDAO.getActiveSemester();
+            if (active == null || active.getSemesterId() == null) {
+                showAlert(Alert.AlertType.INFORMATION, "No Semester", "No active semester.");
+                return;
+            }
+            int semId = active.getSemesterId();
+
+            if (!cancelled.isEmpty() && cancelled.size() == selected.size()) {
+                Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+                UiKit.styleDialog(confirm);
+                confirm.setTitle("Restore Session");
+                confirm.setHeaderText("Restore study session on " + DateUtils.formatDate(selectedDate) + "?");
+                confirm.setContentText(cancelled.size() == 1
+                        ? "Restore " + cancelled.get(0).getLabel() + " (" + DateUtils.formatTime(cancelled.get(0).getStart()) + " - " + DateUtils.formatTime(cancelled.get(0).getEnd()) + ")?\nThe slot will be freed for study sessions."
+                        : "Restore " + cancelled.size() + " cancelled study sessions?\nThe slots will be freed for study sessions.");
+                ButtonType btnRestore = new ButtonType("Restore session", ButtonBar.ButtonData.YES);
+                ButtonType btnKeep = new ButtonType("Keep cancelled", ButtonBar.ButtonData.CANCEL_CLOSE);
+                confirm.getButtonTypes().setAll(btnRestore, btnKeep);
+
+                Optional<ButtonType> res = confirm.showAndWait();
+                if (res.isPresent() && res.get() == btnRestore) {
+                    for (DayRow r : cancelled) {
+                        if (r.getDateOverrideId() != null) {
+                            dateOverrideDAO.delete(r.getDateOverrideId());
+                        } else {
+                            List<DateOverride> ovs = dateOverrideDAO.findByDate(selectedDate);
+                            for (DateOverride ov : ovs) {
+                                if ("ADD".equalsIgnoreCase(ov.getAction())
+                                        && "Cancelled session".equalsIgnoreCase(ov.getLabel())
+                                        && Objects.equals(ov.getStartTime(), r.getStart())
+                                        && Objects.equals(ov.getEndTime(), r.getEnd())) {
+                                    dateOverrideDAO.delete(ov.getOverrideId());
+                                }
+                            }
+                        }
+                    }
+                    runReplanAndRefresh(semId);
+                }
+                return;
+            }
+
+            if (!cancellable.isEmpty() && cancellable.size() == selected.size()) {
+                Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+                UiKit.styleDialog(confirm);
+                confirm.setTitle("Cancel Session");
+                confirm.setHeaderText("Cancel study session on " + DateUtils.formatDate(selectedDate) + " only?");
+                String msg;
+                if (cancellable.size() == 1) {
+                    DayRow r = cancellable.get(0);
+                    msg = String.format("Cancel %s (%s - %s) on %s only?\nThe time will be blocked and its study work will be rescheduled elsewhere.",
+                            r.getLabel(), DateUtils.formatTime(r.getStart()), DateUtils.formatTime(r.getEnd()), DateUtils.formatDate(selectedDate));
+                } else {
+                    StringBuilder sb = new StringBuilder("Cancel the following study sessions on " + DateUtils.formatDate(selectedDate) + " only?\n");
+                    for (DayRow r : cancellable) {
+                        sb.append("- ").append(r.getLabel()).append(" (")
+                                .append(DateUtils.formatTime(r.getStart())).append(" - ")
+                                .append(DateUtils.formatTime(r.getEnd())).append(")\n");
+                    }
+                    sb.append("The time slots will be blocked and study work will be rescheduled elsewhere.");
+                    msg = sb.toString();
+                }
+                confirm.setContentText(msg);
+
+                ButtonType btnCancel = new ButtonType("Cancel session", ButtonBar.ButtonData.YES);
+                ButtonType btnKeep = new ButtonType("Keep", ButtonBar.ButtonData.CANCEL_CLOSE);
+                confirm.getButtonTypes().setAll(btnCancel, btnKeep);
+
+                Optional<ButtonType> res = confirm.showAndWait();
+                if (res.isPresent() && res.get() == btnCancel) {
+                    for (DayRow r : cancellable) {
+                        DateOverride ov = new DateOverride(
+                                null, selectedDate, null, "ADD", r.getStart(), r.getEnd(), "OTHER", "Cancelled session"
+                        );
+                        dateOverrideDAO.insert(ov);
+                    }
+                    runReplanAndRefresh(semId);
+                }
+            }
+        } catch (SQLException ex) {
+            showAlert(Alert.AlertType.ERROR, "Error", ex.getMessage());
+        }
     }
 
     private void handleResizeSelectedSessions() {
@@ -823,15 +1061,23 @@ public class DashboardView {
                             String.join("\n• ", skipped));
         }
 
+        int count = resizable.size() + fixedResizable.size();
+        if (count == 1) {
+            DayRow row = !resizable.isEmpty() ? resizable.get(0) : fixedResizable.get(0);
+            showSingleRowResizeDialog(row);
+            return;
+        }
+
+        // Multi-row selection: duration-only dialog
         double currentDur = !resizable.isEmpty()
                 ? resizable.get(0).getDurationHours()
                 : fixedResizable.get(0).getDurationHours();
         TextInputDialog dialog = new TextInputDialog(DurationFormat.format(currentDur));
         UiKit.styleDialog(dialog);
         dialog.setTitle("Resize sessions");
-        int count = resizable.size() + fixedResizable.size();
-        dialog.setHeaderText("Resize " + count + " row(s) on " + DateUtils.formatDate(selectedDate) + "\n" +
-                "Fixed classes change for this day only. Enter duration (e.g. 1h 30m, 90m, 1:30, 1.5; min 15m, max 8h):");
+        dialog.setHeaderText("Resize " + count + " rows on " + DateUtils.formatDate(selectedDate)
+                + "\nAll selected rows get the same duration; each row keeps its own start time.\n"
+                + "Fixed classes change for this day only. Enter duration (e.g. 1h 30m, 90m, 1:30, 1.5; min 15m, max 8h):");
         dialog.setContentText("New duration:");
 
         Optional<String> res = dialog.showAndWait();
@@ -889,19 +1135,192 @@ public class DashboardView {
                 timetableEditService.resizeMultipleSessions(active.getSemesterId(), selectedDate, logIds, newDurationHours);
             }
 
-            if (replanRunner != null) {
-                replanRunner.run(active.getSemesterId(), LocalDate.now(), () -> {
-                    refreshData();
-                    if (onDataChanged != null) onDataChanged.run();
-                }, null);
-            } else {
-                refreshData();
-                if (onDataChanged != null) onDataChanged.run();
-            }
+            runReplanAndRefresh(active.getSemesterId());
         } catch (IllegalArgumentException iae) {
             showAlert(Alert.AlertType.ERROR, "Cannot Resize", iae.getMessage());
         } catch (Exception ex) {
             showAlert(Alert.AlertType.ERROR, "Error", ex.getMessage());
+        }
+    }
+
+    private void showSingleRowResizeDialog(DayRow row) {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        UiKit.styleDialog(dialog);
+        dialog.setTitle("Resize session");
+        dialog.setHeaderText("Resize " + row.getLabel() + " on " + DateUtils.formatDate(selectedDate)
+                + (row.isFixed() ? "\nFixed class changes for this day only." : ""));
+
+        TextField startInput = new TextField(row.getStart() != null ? DateUtils.formatTime(row.getStart()) : "");
+        TextField endInput = new TextField(row.getEnd() != null ? DateUtils.formatTime(row.getEnd()) : "");
+        startInput.setPrefWidth(120);
+        endInput.setPrefWidth(120);
+
+        Label lblDuration = new Label("Session length: " + DurationFormat.format(row.getDurationHours()));
+        lblDuration.getStyleClass().add("hint");
+
+        Label lblError = new Label();
+        lblError.getStyleClass().add("text-danger");
+        lblError.setWrapText(true);
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(12));
+        grid.add(new Label("Start time:"), 0, 0);
+        grid.add(startInput, 1, 0);
+        grid.add(new Label("End time:"), 0, 1);
+        grid.add(endInput, 1, 1);
+        grid.add(lblDuration, 0, 2, 2, 1);
+        grid.add(lblError, 0, 3, 2, 1);
+
+        dialog.getDialogPane().setContent(grid);
+        ButtonType btnOk = new ButtonType("Resize", ButtonBar.ButtonData.OK_DONE);
+        ButtonType btnCancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialog.getDialogPane().getButtonTypes().setAll(btnOk, btnCancel);
+
+        Node okBtnNode = dialog.getDialogPane().lookupButton(btnOk);
+
+        Runnable validate = () -> {
+            LocalTime s = parseFlexibleTime(startInput.getText());
+            LocalTime e = parseFlexibleTime(endInput.getText());
+            if (s == null || e == null) {
+                lblError.setText("Invalid time. Use 24-hour \"14:30\" or \"2:30 PM\".");
+                lblDuration.setText("Session length: --");
+                okBtnNode.setDisable(true);
+                return;
+            }
+            if (!e.isAfter(s)) {
+                lblError.setText("End time must be after start time");
+                lblDuration.setText("Session length: --");
+                okBtnNode.setDisable(true);
+                return;
+            }
+            double hours = Duration.between(s, e).toMinutes() / 60.0;
+            lblDuration.setText("Session length: " + DurationFormat.format(hours));
+            if (hours < 0.25 || hours > 8.0) {
+                lblError.setText("Length must be between 15m and 8h (currently " + DurationFormat.format(hours) + ")");
+                okBtnNode.setDisable(true);
+                return;
+            }
+            // Check overlap with other non-cancelled fixed rows
+            for (DayRow other : dayScheduleView.getTable().getItems()) {
+                if (other == row || !other.isFixed() || other.isCancelled()
+                        || other.getStart() == null || other.getEnd() == null) {
+                    continue;
+                }
+                if (s.isBefore(other.getEnd()) && e.isAfter(other.getStart())) {
+                    lblError.setText("Overlaps " + other.getLabel() + " (" + DateUtils.formatTime(other.getStart()) + " - " + DateUtils.formatTime(other.getEnd()) + ")");
+                    okBtnNode.setDisable(true);
+                    return;
+                }
+            }
+            // If study session: check fits within free time and does not overlap other study sessions
+            if (!row.isFixed()) {
+                try {
+                    Semester active = semesterDAO.getActiveSemester();
+                    if (active != null) {
+                        List<FreeSlot> freeSlots = timetableEditService.getBaseFreeSlots(active.getSemesterId(), selectedDate);
+                        boolean fits = false;
+                        for (FreeSlot fs : freeSlots) {
+                            if (!s.isBefore(fs.getStart()) && !e.isAfter(fs.getEnd())) {
+                                fits = true;
+                                break;
+                            }
+                        }
+                        if (!fits) {
+                            lblError.setText("Falls outside available free time");
+                            okBtnNode.setDisable(true);
+                            return;
+                        }
+                        List<DailyLogEntry> todayLogs = dailyLogDAO.findByDate(selectedDate);
+                        for (DailyLogEntry otherLog : todayLogs) {
+                            if (row.getDailyLogEntry() != null && !otherLog.getLogId().equals(row.getDailyLogEntry().getLogId())
+                                    && otherLog.getSlotStart() != null && otherLog.getSlotEnd() != null) {
+                                if (s.isBefore(otherLog.getSlotEnd()) && e.isAfter(otherLog.getSlotStart())) {
+                                    lblError.setText("Overlaps another study session ("
+                                            + DateUtils.formatTime(otherLog.getSlotStart()) + " - "
+                                            + DateUtils.formatTime(otherLog.getSlotEnd()) + ")");
+                                    okBtnNode.setDisable(true);
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+            lblError.setText("");
+            okBtnNode.setDisable(false);
+        };
+
+        startInput.textProperty().addListener((obs, oldV, newV) -> validate.run());
+        endInput.textProperty().addListener((obs, oldV, newV) -> validate.run());
+        Platform.runLater(validate);
+
+        Optional<ButtonType> res = dialog.showAndWait();
+        if (res.isPresent() && res.get() == btnOk) {
+            LocalTime s = parseFlexibleTime(startInput.getText());
+            LocalTime e = parseFlexibleTime(endInput.getText());
+            try {
+                Semester active = semesterDAO.getActiveSemester();
+                if (active == null || active.getSemesterId() == null) {
+                    showAlert(Alert.AlertType.ERROR, "No Active Semester", "Cannot resize without an active semester.");
+                    return;
+                }
+                if (row.isFixed()) {
+                    timetableEditService.resizeFixedOccurrence(active.getSemesterId(), selectedDate,
+                            row.getTimetableEntryId(), s, e, row.getType(), row.getLabel());
+                } else if (row.getDailyLogEntry() != null) {
+                    timetableEditService.resizeSession(active.getSemesterId(), selectedDate,
+                            row.getDailyLogEntry().getLogId(), s, e);
+                }
+                runReplanAndRefresh(active.getSemesterId());
+            } catch (Exception ex) {
+                showAlert(Alert.AlertType.ERROR, "Cannot Resize", ex.getMessage());
+            }
+        }
+    }
+
+    private LocalTime parseFlexibleTime(String text) {
+        if (text == null || text.isBlank()) return null;
+        String s = text.trim();
+        try {
+            return LocalTime.parse(s, DateTimeFormatter.ISO_LOCAL_TIME);
+        } catch (Exception ignored) {
+        }
+        try {
+            return LocalTime.parse(s, DateTimeFormatter.ofPattern("H:mm"));
+        } catch (Exception ignored) {
+        }
+        try {
+            return LocalTime.parse(s, DateTimeFormatter.ofPattern("HH:mm"));
+        } catch (Exception ignored) {
+        }
+        try {
+            return LocalTime.parse(s.toUpperCase(java.util.Locale.ENGLISH), DateTimeFormatter.ofPattern("h:mm a", java.util.Locale.ENGLISH));
+        } catch (Exception ignored) {
+        }
+        try {
+            return LocalTime.parse(s.toUpperCase(java.util.Locale.ENGLISH), DateTimeFormatter.ofPattern("hh:mm a", java.util.Locale.ENGLISH));
+        } catch (Exception ignored) {
+        }
+        return null;
+    }
+
+    private void runReplanAndRefresh(int semId) {
+        if (replanRunner != null) {
+            replanRunner.run(semId, LocalDate.now(), () -> {
+                refreshData();
+                if (onDataChanged != null) onDataChanged.run();
+            }, null);
+        } else {
+            try {
+                replanService.regenerateSemesterPlan(semId, LocalDate.now());
+            } catch (SQLException e) {
+                showAlert(Alert.AlertType.ERROR, "Replan Error", e.getMessage());
+            }
+            refreshData();
+            if (onDataChanged != null) onDataChanged.run();
         }
     }
 

@@ -196,13 +196,28 @@ public class DayScheduleView extends VBox {
         // Visual distinction: muted fixed rows, tinted study rows, readable double-click target.
         table.setRowFactory(tv -> {
             TableRow<DayRow> row = new TableRow<>() {
+                {
+                    selectedProperty().addListener((obs, oldV, isSel) -> {
+                        if (isSel) {
+                            if (!getStyleClass().contains("row-selected")) {
+                                getStyleClass().add("row-selected");
+                            }
+                        } else {
+                            getStyleClass().remove("row-selected");
+                        }
+                    });
+                }
+
                 @Override
                 protected void updateItem(DayRow item, boolean empty) {
                     super.updateItem(item, empty);
                     getStyleClass().removeAll("day-row-fixed", "day-row-study", "day-row-cancelled",
-                            "day-row-done", "day-row-manual");
+                            "day-row-done", "day-row-manual", "row-selected");
                     if (empty || item == null) {
                         return;
+                    }
+                    if (isSelected()) {
+                        getStyleClass().add("row-selected");
                     }
                     getStyleClass().add(item.isFixed() ? "day-row-fixed" : "day-row-study");
                     if (item.isCancelled()) {
@@ -358,10 +373,15 @@ public class DayScheduleView extends VBox {
             case "continuing":
                 return "chip-warn";
             case "missed":
+            case "cancelled":
                 return "chip-danger";
             default:
                 return "chip-neutral";
         }
+    }
+
+    public ObservableList<DayRow> getItems() {
+        return items;
     }
 
     public void setRows(List<DayRow> rows) {

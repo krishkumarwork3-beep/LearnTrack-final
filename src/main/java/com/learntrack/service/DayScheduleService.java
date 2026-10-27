@@ -125,7 +125,12 @@ public class DayScheduleService {
                 String label = ov.getLabel() != null && !ov.getLabel().isBlank() ? ov.getLabel() : "Override";
                 String type = ov.getActivityType() != null && !ov.getActivityType().isBlank()
                         ? ov.getActivityType().toUpperCase() : "OTHER";
-                rows.add(new DayRow(type, ov.getStartTime(), ov.getEndTime(), label, null, true));
+                DayRow row = new DayRow(type, ov.getStartTime(), ov.getEndTime(), label, null, true);
+                row.setDateOverrideId(ov.getOverrideId());
+                if ("Cancelled session".equalsIgnoreCase(label)) {
+                    row.setCancelled(true);
+                }
+                rows.add(row);
             }
         }
     }
@@ -249,7 +254,12 @@ public class DayScheduleService {
                 String label = ov.getLabel() != null && !ov.getLabel().isBlank() ? ov.getLabel() : "Override";
                 String type = ov.getActivityType() != null && !ov.getActivityType().isBlank()
                         ? ov.getActivityType().toUpperCase() : "OTHER";
-                rows.add(new DayRow(type, ov.getStartTime(), ov.getEndTime(), label, null, true));
+                DayRow row = new DayRow(type, ov.getStartTime(), ov.getEndTime(), label, null, true);
+                row.setDateOverrideId(ov.getOverrideId());
+                if ("Cancelled session".equalsIgnoreCase(label)) {
+                    row.setCancelled(true);
+                }
+                rows.add(row);
             }
         }
     }

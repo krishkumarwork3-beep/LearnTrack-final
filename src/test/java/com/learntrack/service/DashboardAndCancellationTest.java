@@ -284,6 +284,109 @@ public class DashboardAndCancellationTest {
     }
 
     @Test
+    void testHolidayCancelsEveryClassLabTutorialAndRestoreBringsThemBack() throws SQLException {
+        LocalDate holiday = LocalDate.now().plusDays(1);
+        while (holiday.getDayOfWeek() != java.time.DayOfWeek.MONDAY) {
+            holiday = holiday.plusDays(1);
+        }
+
+        int classId = timetableDAO.insertEntry(new WeeklyTimetableEntry(
+                null, semesterId, "MONDAY", LocalTime.of(9, 0), LocalTime.of(10, 0),
+                "CLASS", "UCS503", "Room 101"
+        ));
+        int labId = timetableDAO.insertEntry(new WeeklyTimetableEntry(
+                null, semesterId, "MONDAY", LocalTime.of(10, 30), LocalTime.of(12, 30),
+                "LAB", "UCS303 Lab", "Lab 2"
+        ));
+        int tutorialId = timetableDAO.insertEntry(new WeeklyTimetableEntry(
+                null, semesterId, "MONDAY", LocalTime.of(14, 0), LocalTime.of(15, 0),
+                "TUTORIAL", "UCT301 Tutorial", "Room 5"
+        ));
+
+        List<DayRow> beforeRows = dayScheduleService.build(semesterId, holiday, false);
+        assertEquals(3, beforeRows.stream().filter(DashboardAndCancellationTest::isClassLike).count(),
+                "All three cancellable classes must exist before the holiday: " + beforeRows);
+
+        // The Holiday button cancels every CLASS / LAB / TUTORIAL row of the date via recordCancellation
+        for (DayRow row : beforeRows) {
+            if (isClassLike(row) && row.getTimetableEntryId() != null) {
+                semesterService.recordCancellation(holiday, row.getTimetableEntryId());
+            }
+        }
+
+        List<DayRow> cancelledRows = dayScheduleService.build(semesterId, holiday, false);
+        assertFalse(cancelledRows.stream().anyMatch(DashboardAndCancellationTest::isClassLike),
+                "No class may remain visible on a holiday: " + cancelledRows);
+
+        // The rows are still there behind the flag, marked cancelled
+        List<DayRow> visibleRows = dayScheduleService.build(semesterId, holiday, true);
+        assertEquals(3, visibleRows.stream().filter(r -> isClassLike(r) && r.isCancelled()).count(),
+                "Every class of the day must be flagged cancelled: " + visibleRows);
+
+        // Other dates of the week are untouched
+        List<DayRow> nextWeekRows = dayScheduleService.build(semesterId, holiday.plusDays(7), false);
+        assertEquals(3, nextWeekRows.stream().filter(DashboardAndCancellationTest::isClassLike).count());
+
+        // Removing the holiday restores all of them
+        for (int entryId : List.of(classId, labId, tutorialId)) {
+            semesterService.recordRemoveCancellation(holiday, entryId);
+        }
+        List<DayRow> restoredRows = dayScheduleService.build(semesterId, holiday, false);
+        assertEquals(3, restoredRows.stream().filter(DashboardAndCancellationTest::isClassLike).count(),
+                "Removing the holiday must restore every class: " + restoredRows);
+        assertTrue(restoredRows.stream().noneMatch(DayRow::isCancelled));
+    }
+
+    private static boolean isClassLike(DayRow row) {
+        String type = row.getType();
+        return "CLASS".equalsIgnoreCase(type) || "LAB".equalsIgnoreCase(type) || "TUTORIAL".equalsIgnoreCase(type);
+    }
+
+    @Test
+    void testCancelledSessionOverrideRemovesThatSlotFromFreeSlots() throws SQLException {
+        LocalDate day = LocalDate.now().plusDays(1);
+        while (day.getDayOfWeek() != java.time.DayOfWeek.MONDAY) {
+            day = day.plusDays(1);
+        }
+
+        // Awake 08:00 - 22:00 with no commitments: the whole window is free
+        timetableDAO.saveRoutines(semesterId, List.of(
+                new WeekdayRoutine(semesterId, "MONDAY", LocalTime.of(8, 0), LocalTime.of(22, 0))));
+
+        LocalTime slotStart = LocalTime.of(16, 0);
+        LocalTime slotEnd = LocalTime.of(17, 0);
+
+        List<FreeSlot> before = freeSlotService.computeFreeSlots(semesterId, day);
+        assertTrue(before.stream().anyMatch(fs -> !fs.getStart().isAfter(slotStart) && !fs.getEnd().isBefore(slotEnd)),
+                "16:00 - 17:00 must start out free: " + before);
+
+        // Exactly the override the Cancel session button writes
+        dateOverrideDAO.insert(new DateOverride(null, day, null, "ADD",
+                slotStart, slotEnd, "OTHER", "Cancelled session"));
+
+        List<FreeSlot> after = freeSlotService.computeFreeSlots(semesterId, day);
+        for (FreeSlot fs : after) {
+            assertFalse(fs.getStart().isBefore(slotEnd) && fs.getEnd().isAfter(slotStart),
+                    "The cancelled session slot must not stay in free time: " + after);
+        }
+        double freedBefore = before.stream().mapToDouble(FreeSlot::getDuration).sum();
+        double freedAfter = after.stream().mapToDouble(FreeSlot::getDuration).sum();
+        assertEquals(1.0, freedBefore - freedAfter, 0.01,
+                "Exactly the cancelled hour must be removed from free time");
+
+        // Restoring the session gives the hour back
+        for (DateOverride ov : dateOverrideDAO.findByDate(day)) {
+            if ("ADD".equalsIgnoreCase(ov.getAction())
+                    && "Cancelled session".equalsIgnoreCase(ov.getLabel())) {
+                dateOverrideDAO.delete(ov.getOverrideId());
+            }
+        }
+        double restored = freeSlotService.computeFreeSlots(semesterId, day).stream()
+                .mapToDouble(FreeSlot::getDuration).sum();
+        assertEquals(freedBefore, restored, 0.01, "Restoring the session must free the hour again");
+    }
+
+    @Test
     void testPastDateAndEndedClassGuard() {
         LocalDate pastDate = LocalDate.now().minusDays(1);
         LocalDate today = LocalDate.now();

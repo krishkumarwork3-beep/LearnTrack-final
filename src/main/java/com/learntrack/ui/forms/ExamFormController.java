@@ -52,14 +52,38 @@ public class ExamFormController {
     private final ExamTimelineHelper timelineHelper;
     private final ExamProvisioningService provisioningService;
 
+    private VBox rootNode;
     private VBox mstSection;
     private VBox estSection;
     private VBox otherSection;
-    private TitledPane mstPane;
-    private TitledPane estPane;
-    private TitledPane otherPane;
+    private VBox detailHost;
+    private ScrollPane detailScrollPane;
+    private VBox categoryListBox;
+    private TextField searchField;
+    private String selectedCategory = "MST";
+
+    private final CategoryInfo mstInfo = new CategoryInfo("MST", "MST (Mid-Semester Tests)", "MST");
+    private final CategoryInfo estInfo = new CategoryInfo("EST", "EST (End-Semester Tests)", "EST");
+    private final CategoryInfo otherInfo = new CategoryInfo("OTHER", "Other Evaluations", "Other Evaluations");
+
     private Label mstTimelineError;
     private Label estTimelineError;
+
+    private static class CategoryInfo {
+        final String key;
+        final String title;
+        final String shortTitle;
+        int total;
+        int dated;
+        int tentative;
+        final List<String> subjectCodes = new ArrayList<>();
+
+        CategoryInfo(String key, String title, String shortTitle) {
+            this.key = key;
+            this.title = title;
+            this.shortTitle = shortTitle;
+        }
+    }
 
     private double defaultPyqHours = 2.0;
 
@@ -118,39 +142,175 @@ public class ExamFormController {
     }
 
     public Node getView() {
-        VBox root = new VBox(16);
-        root.setPadding(new Insets(24));
+        rootNode = new VBox(16);
+        rootNode.setPadding(new Insets(24));
+        rootNode.getStyleClass().add("page");
 
-        HBox header = UiKit.pageHeader("Exams",
-                "Credits and marks are entered upfront for every exam. For MST/EST without a datesheet, "
-                        + "give the rough window; exact dates unlock when the sheet is announced.",
-                null);
-
-        // Create sections
+        // Create section containers
         mstSection = new VBox(8);
         estSection = new VBox(8);
         otherSection = new VBox(8);
 
-        mstPane = new TitledPane("MST (Mid-Semester Tests)", mstSection);
-        mstPane.setExpanded(true);
+        searchField = new TextField();
+        searchField.setPromptText("Search evaluations…");
+        searchField.textProperty().addListener((obs, oldV, newV) -> rebuildCategoryList());
 
-        estPane = new TitledPane("EST (End-Semester Tests)", estSection);
-        estPane.setExpanded(false);
+        categoryListBox = new VBox(8);
+        ScrollPane listScroll = new ScrollPane(categoryListBox);
+        listScroll.setFitToWidth(true);
+        VBox.setVgrow(listScroll, Priority.ALWAYS);
 
-        otherPane = new TitledPane("Other Evaluations (Quizzes, Assignments, etc.)", otherSection);
-        otherPane.setExpanded(false);
+        VBox leftPanel = new VBox(8, searchField, listScroll);
+        leftPanel.setMinWidth(260);
+        leftPanel.setPrefWidth(300);
+        leftPanel.setMaxWidth(340);
 
-        VBox sectionsContainer = new VBox(8);
-        sectionsContainer.getChildren().addAll(mstPane, estPane, otherPane);
+        detailHost = new VBox(12);
+        detailHost.setMinWidth(520);
+        VBox.setVgrow(detailHost, Priority.ALWAYS);
 
-        ScrollPane scrollPane = new ScrollPane(sectionsContainer);
-        scrollPane.setFitToWidth(true);
-        VBox.setVgrow(scrollPane, Priority.ALWAYS);
+        detailScrollPane = new ScrollPane();
+        detailScrollPane.setFitToWidth(true);
+        VBox.setVgrow(detailScrollPane, Priority.ALWAYS);
 
-        root.getChildren().addAll(header, scrollPane);
+        SplitPane split = new SplitPane(leftPanel, detailHost);
+        split.setDividerPositions(0.28);
+        SplitPane.setResizableWithParent(leftPanel, Boolean.FALSE);
+        VBox.setVgrow(split, Priority.ALWAYS);
+
+        rootNode.getChildren().add(split);
+
+        rebuildCategoryList();
+        showSelectedCategory();
 
         loadExams();
-        return root;
+        return rootNode;
+    }
+
+    private void rebuildCategoryList() {
+        if (categoryListBox == null) return;
+        categoryListBox.getChildren().clear();
+
+        String query = searchField == null ? "" : searchField.getText().trim().toLowerCase(Locale.ENGLISH);
+
+        List<CategoryInfo> allCats = List.of(mstInfo, estInfo, otherInfo);
+        int shown = 0;
+        for (CategoryInfo cat : allCats) {
+            if (!query.isEmpty()) {
+                boolean matchesTitle = cat.title.toLowerCase(Locale.ENGLISH).contains(query);
+                boolean matchesCode = cat.subjectCodes.stream().anyMatch(c -> c.contains(query));
+                if (!matchesTitle && !matchesCode) {
+                    continue;
+                }
+            }
+            categoryListBox.getChildren().add(createCategoryCard(cat));
+            shown++;
+        }
+
+        if (shown == 0) {
+            categoryListBox.getChildren().add(UiKit.hint("No evaluations match “" + searchField.getText().trim() + "”."));
+        }
+    }
+
+    private Node createCategoryCard(CategoryInfo info) {
+        Label titleLabel = new Label(info.title);
+        titleLabel.getStyleClass().add("subject-code");
+        titleLabel.setWrapText(true);
+
+        Region dot = new Region();
+        dot.setMinSize(8, 8);
+        dot.setPrefSize(8, 8);
+        dot.setMaxSize(8, 8);
+        String dotColor = (info.total > 0 && info.dated == info.total) ? "-lt-success"
+                : ((info.dated > 0 || info.tentative > 0) ? "-lt-warning" : "-lt-muted");
+        dot.setStyle("-fx-background-color: " + dotColor + "; -fx-background-radius: 4;");
+
+        Label countChip = UiKit.chip(String.valueOf(info.total),
+                (info.total > 0 && info.dated == info.total) ? UiKit.Kind.SUCCESS : UiKit.Kind.INFO);
+
+        HBox top = new HBox(8, dot, titleLabel, UiKit.spacer(), countChip);
+        top.setAlignment(Pos.CENTER_LEFT);
+
+        String statusText;
+        if ("OTHER".equalsIgnoreCase(info.key)) {
+            if (info.total == 0) {
+                statusText = "No evaluations yet";
+            } else if (info.dated > 0 && info.tentative > 0) {
+                statusText = info.dated + " dated · " + info.tentative + " tentative";
+            } else if (info.dated > 0) {
+                statusText = info.dated + " dated";
+            } else {
+                statusText = info.total + " evaluation" + (info.total != 1 ? "s" : "");
+            }
+        } else {
+            if (info.total == 0) {
+                statusText = "No exams";
+            } else if (info.dated > 0 && info.tentative > 0) {
+                statusText = info.dated + " dated · " + info.tentative + " tentative";
+            } else if (info.dated > 0) {
+                statusText = info.dated + " dated";
+            } else if (info.tentative > 0) {
+                statusText = info.tentative + " tentative";
+            } else {
+                statusText = info.total + " planned";
+            }
+        }
+
+        Label statusLabel = new Label(statusText);
+        statusLabel.getStyleClass().add("subject-name");
+        statusLabel.setWrapText(true);
+
+        VBox card = new VBox(6, top, statusLabel);
+        card.getStyleClass().add("subject-item");
+        if (info.key.equalsIgnoreCase(selectedCategory)) {
+            // row-picked gives this card the same highlight as a picked row in Step 2.
+            card.getStyleClass().addAll("subject-item-selected", "row-selected", "row-picked");
+        }
+        card.setFocusTraversable(true);
+        card.setOnMouseClicked(e -> selectCategory(info.key));
+        card.setOnKeyPressed(e -> {
+            if (e.getCode() == javafx.scene.input.KeyCode.ENTER || e.getCode() == javafx.scene.input.KeyCode.SPACE) {
+                selectCategory(info.key);
+                e.consume();
+            }
+        });
+        return card;
+    }
+
+    private void selectCategory(String key) {
+        if (key == null) return;
+        this.selectedCategory = key;
+        rebuildCategoryList();
+        showSelectedCategory();
+    }
+
+    private void showSelectedCategory() {
+        if (detailHost == null) return;
+        detailHost.getChildren().clear();
+
+        String title;
+        String desc = "Credits and marks are entered upfront for every exam. For MST/EST without a datesheet, "
+                + "give the rough window; exact dates unlock when the sheet is announced.";
+        Node content;
+
+        if ("EST".equalsIgnoreCase(selectedCategory)) {
+            title = "EST (End-Semester Tests)";
+            content = estSection;
+        } else if ("OTHER".equalsIgnoreCase(selectedCategory)) {
+            title = "Other Evaluations (Quizzes, Assignments, etc.)";
+            desc = "Credits and marks are entered upfront for every evaluation. Quizzes and lab vivas are scheduled alongside your classes.";
+            content = otherSection;
+        } else {
+            title = "MST (Mid-Semester Tests)";
+            content = mstSection;
+        }
+
+        HBox detailHeader = UiKit.pageHeader(title, desc, null);
+        detailHeader.setPadding(new Insets(0, 0, 8, 0));
+
+        detailScrollPane.setContent(content);
+
+        detailHost.getChildren().addAll(detailHeader, detailScrollPane);
     }
 
     private VBox createTimelineCard(int semesterId, String examType) throws SQLException {
@@ -386,6 +546,14 @@ public class ExamFormController {
                 mstSection.getChildren().clear();
                 estSection.getChildren().clear();
                 otherSection.getChildren().clear();
+                if (categoryListBox != null) {
+                    categoryListBox.getChildren().setAll(
+                            UiKit.emptyState("No active semester", "Create or activate a semester first."));
+                }
+                if (detailHost != null) {
+                    detailHost.getChildren().setAll(
+                            UiKit.emptyState("Nothing to show", "There is no active semester."));
+                }
                 return;
             }
 
@@ -592,6 +760,71 @@ public class ExamFormController {
                 }
             }
 
+            // Update counts for MST
+            mstInfo.total = allMstExams.size() + Math.max(0, subjects.size() - mstExams.size());
+            mstInfo.dated = 0;
+            mstInfo.tentative = 0;
+            mstInfo.subjectCodes.clear();
+            for (Exam exam : allMstExams) {
+                if (exam.getSubjectCode() != null) mstInfo.subjectCodes.add(exam.getSubjectCode().toLowerCase(Locale.ENGLISH));
+                if (exam.getSubject() != null) mstInfo.subjectCodes.add(exam.getSubject().toLowerCase(Locale.ENGLISH));
+                if (exam.getExamDate() != null) {
+                    if (exam.isExamDateTentative()) mstInfo.tentative++;
+                    else mstInfo.dated++;
+                } else if (exam.getWindowStartDate() != null) {
+                    mstInfo.tentative++;
+                }
+            }
+
+            // Update counts for EST
+            estInfo.total = allEstExams.size() + Math.max(0, subjects.size() - estExams.size());
+            estInfo.dated = 0;
+            estInfo.tentative = 0;
+            estInfo.subjectCodes.clear();
+            for (Exam exam : allEstExams) {
+                if (exam.getSubjectCode() != null) estInfo.subjectCodes.add(exam.getSubjectCode().toLowerCase(Locale.ENGLISH));
+                if (exam.getSubject() != null) estInfo.subjectCodes.add(exam.getSubject().toLowerCase(Locale.ENGLISH));
+                if (exam.getExamDate() != null) {
+                    if (exam.isExamDateTentative()) estInfo.tentative++;
+                    else estInfo.dated++;
+                } else if (exam.getWindowStartDate() != null) {
+                    estInfo.tentative++;
+                }
+            }
+
+            // Update counts for OTHER
+            otherInfo.total = 0;
+            otherInfo.dated = 0;
+            otherInfo.tentative = 0;
+            otherInfo.subjectCodes.clear();
+            for (List<Exam> list : normalExamsBySubject.values()) {
+                if (list != null) {
+                    for (Exam exam : list) {
+                        otherInfo.total++;
+                        if (exam.getSubjectCode() != null) otherInfo.subjectCodes.add(exam.getSubjectCode().toLowerCase(Locale.ENGLISH));
+                        if (exam.getSubject() != null) otherInfo.subjectCodes.add(exam.getSubject().toLowerCase(Locale.ENGLISH));
+                        if (exam.getEvalName() != null) otherInfo.subjectCodes.add(exam.getEvalName().toLowerCase(Locale.ENGLISH));
+                        if (exam.getExamDate() != null) {
+                            if (exam.isExamDateTentative()) otherInfo.tentative++;
+                            else otherInfo.dated++;
+                        }
+                    }
+                }
+            }
+            for (Exam exam : unassignedNormal) {
+                otherInfo.total++;
+                if (exam.getSubjectCode() != null) otherInfo.subjectCodes.add(exam.getSubjectCode().toLowerCase(Locale.ENGLISH));
+                if (exam.getSubject() != null) otherInfo.subjectCodes.add(exam.getSubject().toLowerCase(Locale.ENGLISH));
+                if (exam.getEvalName() != null) otherInfo.subjectCodes.add(exam.getEvalName().toLowerCase(Locale.ENGLISH));
+                if (exam.getExamDate() != null) {
+                    if (exam.isExamDateTentative()) otherInfo.tentative++;
+                    else otherInfo.dated++;
+                }
+            }
+
+            rebuildCategoryList();
+            showSelectedCategory();
+
         } catch (SQLException e) {
             e.printStackTrace();
             showError("Load Error", "Failed to load exams: " + e.getMessage());
@@ -774,7 +1007,9 @@ public class ExamFormController {
                 }
             } else {
                 // Update existing exam (set subjectCode if missing)
-                boolean wasUndated = (existingExam.getExamDate() == null || existingExam.isExamDateTentative());
+                LocalDate previousExamDate = existingExam.getExamDate();
+                boolean previousTentative = existingExam.isExamDateTentative();
+                boolean wasUndated = (previousExamDate == null || previousTentative);
                 boolean isBecomingDated = wasUndated && isDatesheetMode && examDate != null;
                 
                 existingExam.setSubject(subjectInfo.getDisplayName());
@@ -797,9 +1032,13 @@ public class ExamFormController {
                 existingExam.setPyqRemainingHours(pyqHours);
                 try {
                     examDAO.update(existingExam);
-                    
-                    // Recompute window from datesheet when MST/EST exam gets exact date
-                    if (!isNormal && isBecomingDated) {
+
+                    // Any date change of an MST/EST exam moves the sheet window: recompute it from
+                    // every exactly dated exam of this type (date added, moved or made exact).
+                    boolean examDateChanged = (previousExamDate == null
+                            ? examDate != null : !previousExamDate.equals(examDate))
+                            || previousTentative != tentative;
+                    if (!isNormal && (isBecomingDated || examDateChanged)) {
                         timelineService.recomputeWindowFromDatesheet(active.getSemesterId(), examType);
                     }
                 } catch (IllegalArgumentException e) {
@@ -1217,6 +1456,6 @@ public class ExamFormController {
     }
 
     private Window window() {
-        return mstPane != null && mstPane.getScene() != null ? mstPane.getScene().getWindow() : null;
+        return rootNode != null && rootNode.getScene() != null ? rootNode.getScene().getWindow() : null;
     }
 }
