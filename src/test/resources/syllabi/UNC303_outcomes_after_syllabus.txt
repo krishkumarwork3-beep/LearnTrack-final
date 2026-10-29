@@ -1,0 +1,88 @@
+ 
+
+UNC303: COMPUTER AND COMMUNICATION NETWORKS 
+ L T P Cr 
+3 0 0 3.0 
+Course Objective: To introduce basic concepts of Data communication with different models. 
+Enumerate the physical layer, Data Link Layer, Network Layer, Transport Layer and Application 
+Layer, explanation of the function(s) of each layer. Familiarization with cryptography and network 
+security.  
+ 
+Overview of Data Communication and Networking: Data communications, Networks, The 
+Internet, Protocols and standards, Layered tasks, OSI model, TCP /IP protocol Architecture and its 
+addressing, Data Rate Limits, Circuit switching, Packet Switching, Message Switching.  
+ 
+Data link layer:  
+Types of errors, Detection, Error correction, Flow and error control, Stop and wait ARQ, go back n 
+ARQ, Selective repeat ARQ, HDLC, Point to point protocol, PPP stack, ALOHA, CSMA, 
+CSMA/CD, CSMA/CA, Reservation, Polling, Token Passing, FDMA, TDMA, CDMA. IEEE 
+Standards: 802.3 to 802.6 and 802.11, FDDI, Bluetooth, SONET/SDH.  
+ 
+Network layer: Internetworks, Logical Addressing, Subnetting, Routing, ARP, IP, ICMP, IGMP, 
+IPV6, Unicast routing, Unicast routing protocol, Multicast routing, Multicast routing protocols.  
+ 
+Transport layer: Process to process delivery, User datagram protocol (UDP), Transmission control 
+protocol (TCP), Data traffic, Congestion, Congestion control, Quality of service, Techniques to 
+improve QOS, Integrated services, Differentiated services. 
+ 
+Application layer: Client server model, Socket interface, Name space, Domain name space, 
+Distribution of name space, DNS in the internet, Resolution, DNS messages, DDNS, Encapsulation, 
+Electronic mail, File transfer, HTTP, World wide web (WWW), Network Management System, 
+Cryptography, Network Security, Simple Network Management Protocol (SNMP), Simple Mail 
+Transfer protocol (SMTP) 
+Familiarization with standard: Local and Metropolitan Area Networks-Overview and 
+Architecture: IEEE 802-2014, Ethernet: IEEE 802.3, Token Bus: IEEE 802.4, Token Ring: IEEE 
+802.5, Wireless LAN (Wi-Fi): IEEE 802.11, Wireless Personal Area Networks (Bluetooth): IEEE 
+802.15.1. 
+ 
+Course Learning Objectives (CLO): The students will be able to: 
+1. Understand the layered architecture of Internet’s reference models: OSI & TCP/IP and basis 
+of physical layer and media. 
+2. Analyze the design issues, framing, error detection and correction, channel allocation 
+techniques and link layer protocols. 
+3. Evaluate the network layer, internetworking, IP and IP addressing mechanism. 
+4. Apply various routing algorithms, elements of transport protocols, congestion control, and 
+QOS in networks. 
+5. Understand various communication applications like email, web browser, familiarization 
+with cryptography and network security. 
+ 
+Approved in 3rd meeting of AC held on March 18, 2026.  
+ 
+
+Text Books 
+1. Ferouzan, Behrouz A., Data Communications and Networking, TATA McGraw Hill  5th 
+Edition, (2017) 
+2. Tanenbaum, Andrew S., Computer Networks, PHI 5th Edition, (2013). 
+3. D. Gross and C. Harris, Fundamentals of Queueing Theory, 3rd Edition, Wiley, 1998. (WSE 
+Edition, 2004). 
+Reference Books 
+1. Stallings William, Data and Computer Communication, Pearson Education 10th Edition, 
+(2017). 
+2. James F. Kurose, Computer networking: A top-down approach, Pearson Education 6th 
+Edition, (2017). 
+3. Athanasios Papoulis, Probability Random Variables and Stochastic Processes, McGraw-Hill, 
+4th Edition, (2002). 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Approved in 3rd meeting of AC held on March 18, 2026.  

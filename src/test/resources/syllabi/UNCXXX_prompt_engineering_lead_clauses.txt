@@ -1,0 +1,146 @@
+ 
+
+UNC***: PROMPT ENGINEERING 
+L T P Cr 
+2 0 2 3.0 
+ 
+Course Objective: This course aims to provide students with a structured and practical understanding 
+of Prompt Engineering, which is the systematic design of inputs (prompts) for Large Language 
+Models (LLMs) to obtain reliable, accurate, and controllable outputs. The course focuses on prompt 
+patterns, optimization strategies, evaluation techniques, safety aspects, and responsible use of 
+Generative AI tools in engineering and academic contexts. 
+ 
+Syllabus: 
+Introduction to Prompt Engineering; Basic idea of Generative AI tools; Understanding prompts and 
+their role in AI interaction; Key components of a good prompt; General limitations of AI responses; 
+Responsible use of AI in academics 
+ 
+Basic Prompting Techniques; Writing clear and effective instructions; Using simple examples in 
+prompts; Role-based prompting for different tasks; Creating reusable prompt formats; Improving 
+responses through prompt refinement 
+ 
+Prompting for Complex Tasks; Breaking tasks into smaller steps; Asking for structured and stepwise 
+outputs; Using prompts for extended tasks and workflows; Applying constraints for better control; 
+Prompting in common academic and engineering scenarios 
+ 
+Evaluation and Ethical Use; Checking prompt outputs for correctness and relevance; Basic 
+comparison of different prompts; Reducing incorrect or misleading responses; Safe prompting 
+practices; Ethical concerns such as privacy and academic integrity 
+ 
+Familiarization with standard: IEEE 610.12-1990 (Standard Glossary of Software Engineering 
+Terminology), IEEE 7000-2021 (Model Process for Addressing Ethical Concerns during System 
+Design), IEEE 7001-2021 (Transparency of Autonomous Systems), IEEE 7002-2022 (Data Privacy 
+Process), IEEE 1012-2016 (System and Software Verification and Validation), IEEE 730-2014 
+(Software Quality Assurance Processes), and IEEE 1061-1998 (Software Quality Metrics). 
+ 
+Laboratory Work: The laboratory component of this course provides hands-on practice in designing 
+and improving prompts for Generative AI systems. Students will learn basic prompt writing, use of 
+examples, role-based prompting, structured response generation, and stepwise prompting for larger 
+tasks. The labs also introduce simple evaluation methods and responsible use of AI tools in 
+engineering contexts. 
+ 
+Course learning outcome (CLO):  The student will be able to: 
+1. Understand the basic concept of prompt engineering and its role in Generative AI systems. 
+2. Write clear and effective prompts using common prompting techniques. 
+3. Apply prompt design methods for structured and multi-step engineering tasks. 
+4. Evaluate AI-generated responses and demonstrate responsible and ethical use of Generative 
+AI tools. 
+ 
+ 
+ 
+Approved in 3rd meeting of AC held on March 18, 2026.  
+ 
+
+Text Books 
+1. Lewis Tunstall, Leandro von Werra, and Thomas Wolf, Natural Language Processing with 
+Transformers, O’Reilly Media, 2022. 
+2. Jurafsky, D. & Martin, J., Speech and Language Processing, Selected chapters on 
+Transformers and Prompting. 
+3. Likun Zhao et al., Pre-train, Prompt, and Predict: A Survey of Prompting Methods in Natural 
+Language Processing, ACM Computing Surveys, 2023. 
+Reference Books 
+1. Brown, T. et al., Language Models are Few-Shot Learners, NeurIPS. 
+2. OpenAI Prompting Documentation and Best Practices Guides.  
+3. Ethics of Artificial Intelligence and Robotics (edited collection — Cambridge Handbook) — 
+Academic reference on ethical issues in AI 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Approved in 3rd meeting of AC held on March 18, 2026.  
+ 
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ELECTIVE – I 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Approved in 3rd meeting of AC held on March 18, 2026.  

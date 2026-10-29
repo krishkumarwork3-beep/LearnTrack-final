@@ -1,0 +1,83 @@
+ 
+
+ 
+UCS551: Conversational AI: Accelerated Data Science 
+ L T P Cr 
+2 0 2 3 
+Course Objective: This course will provide students with fundamental and advanced methods of 
+data science: from Data Collection to Analytics and Machine Learning with RAPIDS on Text and 
+Graphical problems. 
+Syllabus 
+Introduction: Fundamentals of Data Science, GPU Acceleration, RAPIDS Framework 
+Data Collection: Collecting Data, Scraping Data, Popular Scraping libraries, Data Annotation 
+Data Pre-processing (ETL): Introduction to Data-preprocessing, Data Cleaning & Statistical 
+Preprocessing, Data Cleaners: OpenRefine and Wrangler, Feature Selection: Introduction to 
+Filter Methods, Introduction to Model- based methods, Feature Reduction: PCA. 
+Introduction to Machine Learning - Supervised: Introduction to Supervised Learning, Linear 
+Model, RAPIDS acceleration: Linear Regression, Overfitting and Cross Validation, Decision 
+Tree, Visualizing Classification: {ROC, AUC, Confusion Matrix}, Bagging, Random Forests, 
+RAPIDS Acceleration: Random Forest, Boosting, RAPIDS acceleration: K-NN, XGBoost. 
+Introduction to Machine Learning - Unsupervised: Introduction to Unsupervised Learning, 
+Kmeans & Hierarchical Clustering, RAPIDS acceleration: K-Means, DBSCAN, PCA, t-SNE, 
+UMAP, Visualizing Clusters, RAPIDS acceleration: PCA [t-SNE], UMAP, DBSCAN. 
+Graph Analytics: How to Represent & Store Graphs, Graph Power Laws, Centralities: Degree, 
+Betweenness, Clustering Coefficient, PageRank & Personalized PageRank, Interactive Graph 
+Exploration, RAPIDS Acceleration: Graphistry & cuXFilter. 
+Introduction to Deep Learning: Introduction to Artificial Neural Networks (ANNs), Artificial 
+Neurons, Layers, Perceptron, Multilayer Perceptron, Advanced Deep Neural Networks 
+(DNNs), Batch Normalization, Hyperparameter tuning, Activation Functions, Metrics, 
+Optimization, Regularization. 
+Laboratory Work:  
+1. Introduction to Dockers & Containers, Introduction to NVIDIA GPU Cloud (NGC). 
+2. Practical on Traditional Data Science packages (Numpy, Pandas, Scipy, Scikit-Learn). 
+3. Accelerated Data Science framework RAPIDS: Introduction to RAPIDS and cuDF. 
+4. Data Collection via API/Web Scraping. 
+5. Decision Tree Classification Clustering in RAPIDS. 
+6. Random Forest Classification in RAPIDS. 
+7. KMeans Clustering Implementation in RAPIDS. 
+8. Dimensionality Reduction and Visualization in RAPIDS. 
+9. Graph Analytics with cuGraph. 
+10. Latent semantic indexing for text via singular value decomposition(cuML). 
+11. Accelerating Workloads using RAPIDS 
+12. Introduction to DL Frameworks: PyTorch, and Tensorflow (Keras) 
+Course Learning Objectives (CLO) 
+Approved in 3rd meeting of AC held on March 18, 2026.  
+ 
+
+After the completion of the course the student will be able to: 
+1. In depth understanding of Data Analytics, Pre-processing and Visualization Toolkits. 
+2. Comprehend and apply different classification and clustering techniques. 
+3. Understand GPU computing for building advanced data science applications. 
+4. Understand the concept of Neural Networks and its implementation using deep learning 
+frameworks. 
+Text Books 
+1. Mitchell M., T., Machine Learning, McGraw Hill (1997) 1st Edition. 
+2. Alpaydin E., Introduction to Machine Learning, MIT Press (2014) 3rd Edition. 
+3. Vijayvargia Abhishek, Machine Learning with Python, BPB Publication (2018). 
+Reference Books: 
+1. Bishop M., C., Pattern Recognition and Machine Learning, Springer-Verlag (2011) 2nd Edition. 
+2. Michie D., Spiegelhalter J. D., Taylor C. C., Campbell, J., Machine Learning, Neural and 
+Statistical Classification. Overseas Press (1994). 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Approved in 3rd meeting of AC held on March 18, 2026.  

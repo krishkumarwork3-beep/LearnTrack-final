@@ -1,0 +1,47 @@
+ 
+
+UPH064 : NANOSCIENCE AND NANOMATERIALS 
+ L T P Cr 
+2 0 0 2.0 
+Course Objective: To introduce the basic concept of Nanoscience and advanced applications of 
+nanotechnology. 
+Fundamental of Nanoscience:  Features of Nanosystem, Free electron theory and its features, 
+Idea of band structures, Density of states in bands, Variation of density of state and band gap with 
+size of crystal,  
+Quantum Size Effect: Concepts of quantum effects, Schrodinger time independent and time 
+dependent equation, Electron confinement in one-dimensional well and three-dimensional infinite 
+square well, Idea of quantum well structure, Quantum dots and quantum wires,  
+Nano Materials: Classification of Nano Materials their properties, Basic concept relevant to 
+application, Fullerenes, Nanotubes and nano-wires, Thin films chemical sensors, Gas sensors, 
+Vapour sensors and Bio sensors,   
+Synthesis and processing: Sol-gel process, Cluster beam evaporation, Ion beam deposition, 
+Chemical bath deposition with capping techniques and ball milling, Cluster assembly and 
+mechanical attrition, Sputtering method, Thermal evaporation, Laser method, 
+Characterization: Determination of particle size, XRD technique, Photo luminescence, Electron 
+microscopy, Raman spectroscopy, STEM, AFM, 
+ 
+Applications: Photonic crystals, Smart materials, Fuel and solar cells, Opto-electronic devices. 
+Laboratory Work: NA 
+Course Learning Objectives (CLO) 
+Upon completion of the course, Students will be able to 
+1. discriminate between bulk and nano materials,  
+2. establish the size and shape dependence of Materials’ properties,  
+3. correlate ‘quantum confinement’ and ‘quantum size effect’ with physical and chemical 
+properties of nanomaterials,  
+4. uses top-down and bottom-up methods to synthesize nanoparticles and control their size and 
+shape. 
+5. characterize nanomaterials with various physico-chemical characterization tools and use them 
+in development of modern technologies 
+Recommended Books: 
+1.  Booker, R., Boysen, E., Nanotechnology, Wiley India Pvt, Ltd, (2008) 
+2. Rogers, B., Pennathur, S., Adams, J., Nanotechnology, CRS Press (2007) 
+3. Bandyopadhyay, A,K., Nano Materials, New Age Int,, (2007) 
+4. Niemeyer, C. N., and Mirkin, C, A., Nanobiotechnology: Concepts, Applications and 
+Perspectives, Wiley VCH, Weinhein, Germany (2007) 
+ 
+ 
+ 
+ 
+ 
+ 
+Approved in 3rd meeting of AC held on March 18, 2026.  

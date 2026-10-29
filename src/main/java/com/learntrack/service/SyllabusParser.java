@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 public class SyllabusParser {
 
     private static final Pattern SUBJECT_HEADER_PATTERN = Pattern.compile(
-            "^([A-Z]{3}(?:\\d{3}|\\*{3}))\\s*(?::|[-\\u2013]\\s)\\s*(.+)$", Pattern.CASE_INSENSITIVE);   // "UCS503: ...", "UNC***: ...", "UNC513- ..."
+            "^([A-Z]{3}(?:\\d{3}|\\*{3}|x{3}))\\s*(?::|[-\\u2013]\\s)\\s*(.+)$", Pattern.CASE_INSENSITIVE);   // "UCS503: ...", "UNC***: ...", "UNCxxx: ...", "UNC513- ..."
 
     private static final String[] CONTENT_START_MARKERS = {
             "Course Objectives", "course objectives"
@@ -336,7 +336,11 @@ public class SyllabusParser {
     private static final Pattern SKIP_LINE = Pattern.compile(
             "^(?:(?:detailed\\s+)?syllabus|course\\s+contents?)\\s*:?\\s*$"
             + "|^(?:.*\\s)?L\\s+T\\s+P(?:\\s+Cr)?(?:\\s+[\\d.]+){0,4}\\s*$"   // "L T P Cr", "L T P", "MACHINE LEARNING L T P 3 0 2"
-            + "|^\\d+\\s+\\d+\\s+\\d+(?:\\s+[\\d.]+)?\\s*$", Pattern.CASE_INSENSITIVE);
+            + "|^\\d+\\s+\\d+\\s+\\d+(?:\\s+[\\d.]+)?\\s*$"
+            + "|^(?:elective|semester)\\s*[-\\u2013]?\\s*(?:[IVX]+|\\d+)\\s*$", Pattern.CASE_INSENSITIVE);   // booklet dividers
+
+    /** An inline sub-heading in the middle of a line: "... Resolving Powers. Polarization: Production". */
+    private static final Pattern INLINE_LABEL = Pattern.compile("[.;]\\s+[A-Z][\\p{L}\\s&/-]{1,40}:\\s");
 
     /** A bare "Syllabus" / "Course contents" line. */
     private static final Pattern SYLLABUS_MARKER = Pattern.compile(
@@ -872,6 +876,15 @@ public class SyllabusParser {
         }
         boolean trailingCommaStyle = commaLed >= 2;
 
+        // A paragraph that places "Label:" sub-headings mid-line uses labels as inner headings, so its
+        // line-start labels are inner headings too ("Optics: Interference: ... Powers. Polarization: ...").
+        boolean inlineLabelParagraph = false;
+        if (forceFirst) {
+            for (String l : lines) {
+                if (INLINE_LABEL.matcher(l).find()) { inlineLabelParagraph = true; break; }
+            }
+        }
+
         String prev = null;
         boolean first = true;
         for (String line : lines) {
@@ -882,6 +895,19 @@ public class SyllabusParser {
             first = false;
 
             if (startsUnit && bulletUnits && !bulleted && !forced) startsUnit = false;
+
+            // Inside a paragraph (forceFirst) a later line opens a new unit only when it clearly starts
+            // fresh: not a bullet under the heading, right after a finished sentence, and in a paragraph
+            // that does not already use inline "Label:" sub-headings (those stay inner labels).
+            if (startsUnit && forceFirst && !forced) {
+                // fresh start = the line above finished a sentence, or is a visibly short last line of
+                // a paragraph (a wrapped line runs the full width) that does not stop mid-phrase
+                boolean freshStart = prev != null && (prev.matches(".*[.!?]\\s*$")
+                        || (prev.trim().length() < 0.85 * maxLen && !stopsMidPhrase(prev)));
+                if (bulleted || !freshStart || inlineLabelParagraph) {
+                    startsUnit = false;
+                }
+            }
 
             if (startsUnit && !forced && !bulletUnits && !bodies.isEmpty()) {
                 StringBuilder last = bodies.get(bodies.size() - 1);
@@ -907,6 +933,15 @@ public class SyllabusParser {
             }
             prev = line;
         }
+    }
+
+    /** Ends on ";", ":", a dash, an open bracket or a joining word - the sentence obviously continues. */
+    private static boolean stopsMidPhrase(String line) {
+        String t = line.trim();
+        if (t.isEmpty()) return false;
+        if (t.matches(".*[;:\\-\\u2013\\u2014(]$") || parenDepth(t) > 0) return true;
+        if (t.matches(".*[.;]\\s+\\S+(?:\\s+\\S+){0,2}$")) return true;   // "... CDMA. IEEE": a new sentence just began
+        return t.toLowerCase().matches(".*\\b(?:and|or|with|of|in|a|an|the|to|for|by|as|vs)$");
     }
 
     /** 1-6 words, first word capitalised, and no lower-case word except short joiners ("and", "of", ...) ... */
@@ -1144,6 +1179,7 @@ public class SyllabusParser {
         List<String> inlines = new ArrayList<>();
         List<Integer> headerLens = new ArrayList<>();
         List<List<String>> groups = new ArrayList<>();
+        List<String> preamble = new ArrayList<>();
 
         for (String line : lines) {
             if (line.isEmpty()) continue;
@@ -1169,8 +1205,19 @@ public class SyllabusParser {
                 groups.add(new ArrayList<>());
             } else if (!names.isEmpty()) {
                 groups.get(groups.size() - 1).add(line);
+            } else {
+                preamble.add(line);      // text before the first unit
             }
-            // else: text before the first unit - ignored
+        }
+
+        // The numbering starts at 2 / II but real content precedes it: the "Unit I" heading was lost
+        // (page break, copy-paste). Keep that content as Unit 1 instead of dropping it.
+        if (!names.isEmpty() && preamble.size() >= 2 && names.get(0).matches("(?i)Unit (?:2|II)\\b.*")) {
+            boolean roman = names.get(0).matches("(?i)Unit II\\b.*");
+            names.add(0, roman ? "Unit I" : "Unit 1");
+            inlines.add(0, "");
+            headerLens.add(0, 0);
+            groups.add(0, preamble);
         }
 
         int maxBodyLen = 0;

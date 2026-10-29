@@ -25,6 +25,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.*;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
@@ -313,7 +314,7 @@ public class MainApp extends Application {
             for (int i = 0; i < orderedTabs.size(); i++) {
                 final Tab target = orderedTabs.get(i);
                 scene.getAccelerators().put(
-                        new KeyCodeCombination(KeyCode.valueOf("DIGIT" + (i + 1))),
+                        new KeyCodeCombination(KeyCode.valueOf("DIGIT" + (i + 1)), KeyCombination.SHORTCUT_DOWN),
                         () -> tabPane.getSelectionModel().select(target));
             }
 
@@ -360,17 +361,22 @@ public class MainApp extends Application {
         name.getStyleClass().add("brand-name");
         Label tagline = new Label("Study planner");
         tagline.getStyleClass().add("brand-tagline");
-        HBox brand = new HBox(10, mark, new VBox(0, name, tagline));
+        VBox brandText = new VBox(0, name, tagline);
+        Button collapse = new Button();
+        collapse.getStyleClass().add("sidebar-collapse");
+        HBox brand = new HBox(10, mark, brandText, UiKit.spacer(), collapse);
         brand.getStyleClass().add("brand");
 
         VBox nav = new VBox(2);
         ToggleGroup group = new ToggleGroup();
         java.util.Map<Tab, ToggleButton> buttons = new java.util.HashMap<>();
+        List<Label> sections = new java.util.ArrayList<>();
         for (int i = 0; i < entries.size(); i++) {
             NavEntry entry = entries.get(i);
             if (entry.section() != null) {
                 Label section = new Label(entry.section());
                 section.getStyleClass().add("nav-section");
+                sections.add(section);
                 nav.getChildren().add(section);
             }
             ToggleButton button = new ToggleButton(entry.label(), UiKit.icon(entry.icon()));
@@ -436,8 +442,58 @@ public class MainApp extends Application {
         VBox.setVgrow(grow, Priority.ALWAYS);
         VBox sidebar = new VBox(brand, nav, grow, footer);
         sidebar.getStyleClass().add("sidebar");
+
+        // Collapse to an icon rail (button, Ctrl+B); the choice is remembered between launches.
+        Runnable[] relabel = new Runnable[1];
+        boolean[] collapsed = {"true".equals(readSetting("ui_sidebar_collapsed", "false"))};
+        java.util.function.Consumer<Boolean> apply = animate -> {
+            boolean c = collapsed[0];
+            double target = c ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED;
+            for (ToggleButton b : buttons.values()) {
+                b.setContentDisplay(c ? ContentDisplay.GRAPHIC_ONLY : ContentDisplay.LEFT);
+            }
+            themeToggle.setContentDisplay(c ? ContentDisplay.GRAPHIC_ONLY : ContentDisplay.LEFT);
+            for (Node n : List.<Node>of(mark, brandText, coverageChip)) {
+                n.setVisible(!c);
+                n.setManaged(!c);
+            }
+            for (Label s : sections) {
+                s.setText(c ? "" : s.getUserData() == null ? s.getText() : (String) s.getUserData());
+            }
+            sidebar.pseudoClassStateChanged(javafx.css.PseudoClass.getPseudoClass("collapsed"), c);
+            collapse.setGraphic(UiKit.icon(c ? UiKit.Icon.CHEVRON_RIGHT : UiKit.Icon.CHEVRON_LEFT));
+            collapse.setTooltip(new Tooltip((c ? "Expand" : "Collapse") + " sidebar  (Ctrl+B)"));
+            if (animate) {
+                javafx.animation.Timeline t = new javafx.animation.Timeline(new javafx.animation.KeyFrame(
+                        javafx.util.Duration.millis(180),
+                        new javafx.animation.KeyValue(sidebar.prefWidthProperty(), target,
+                                javafx.animation.Interpolator.EASE_BOTH)));
+                t.play();
+            } else {
+                sidebar.setPrefWidth(target);
+            }
+            sidebar.setMinWidth(Region.USE_PREF_SIZE);
+            sidebar.setMaxWidth(Region.USE_PREF_SIZE);
+        };
+        for (Label s : sections) s.setUserData(s.getText());
+        relabel[0] = () -> {
+            collapsed[0] = !collapsed[0];
+            writeSetting("ui_sidebar_collapsed", String.valueOf(collapsed[0]));
+            apply.accept(true);
+        };
+        collapse.setOnAction(e -> relabel[0].run());
+        sidebar.sceneProperty().addListener((obs, o, scene) -> {
+            if (scene != null) {
+                scene.getAccelerators().put(new KeyCodeCombination(KeyCode.B, KeyCombination.SHORTCUT_DOWN),
+                        relabel[0]);
+            }
+        });
+        apply.accept(false);
         return sidebar;
     }
+
+    private static final double SIDEBAR_EXPANDED = 224;
+    private static final double SIDEBAR_COLLAPSED = 68;
 
     private void refreshSidebarCoverage() {
         if (coverageValue == null || replanService == null) {

@@ -1,0 +1,50 @@
+ 
+
+UNC401: DATA STRUCTURES 
+ L T P Cr 
+3 0 2 4.0 
+ 
+Course Objective: to become familiar with different types of data structures and their 
+applications and learn different types of algorithmic techniques and strategies. 
+Syllabus 
+Introduction: Basic Datatypes, Abstract data types, Data Representation, Basic concepts of data 
+Structures, Mathematical preliminaries - big-Oh notation; efficiency of algorithms, notion of time 
+and space complexity, performance measures for data structures, Recurrence relations, Analysis 
+of iterative and recursive algorithms. 
+ 
+Linear data structures: Abstract Data Type: Arrays, records, linked lists, strategies for choosing 
+the appropriate data structure, Abstract data types and their implementation: stacks, queues, 
+priority queues, Hash tables, including strategies for avoiding and resolving collisions 
+Searching and Sorting: Linear Search, Binary Search, Bubble Sort, Selection Sort, Insertion 
+Sort, Shell Sort, Quick Sort, Heap Sort, Merge Sort, Counting Sort and Radix Sort. 
+Trees and their applications: Binary trees and their properties, Tree traversal methods and 
+algorithms, Binary search trees, Common operations on binary search trees, Importance of 
+balancing, AVL trees, searching, Insertion and deletion in AVL trees, red-black trees, comparison 
+with AVL trees, search, insert, and delete operations, Issues in large dictionaries, m-way search 
+trees, B-trees, search, insert and delete operations, height of B-tree, 2–3 trees, Heap 
+implementation, insertion and deletion operations, heapsort, Heaps in Huffman coding  
+Graphs: Directed and undirected graphs, properties, connectivity in graphs, applications, 
+Representations of graphs, Graph traversal techniques: Breadth First Search (BFS) and Depth 
+First Search (DFS), Shortest-path algorithms (Dijkstra and Floyd), Minimum spanning tree (Prim 
+and Kruskal). 
+ 
+Familiarization with standard: Systems and Software Engineering-Requirements Engineering: 
+IEEE 29148-2018, Portable Operating System Interface (POSIX): IEEE 1003.1 
+ 
+Laboratory Work: Implementation of Arrays, Recursion, Stacks, Queues, Lists, Binary trees, 
+Graphs, Sorting and Searching techniques.  
+Course Learning Objectives (CLO) 
+ 
+1. Implement the basic data structures and solve problems using fundamental algorithms. 
+2. Implement various searching and sorting techniques. 
+3. Analyze the complexity of algorithms, to provide justification for that selection, and to 
+implement the algorithm in a particular context. 
+4. Apply appropriate data structure and algorithmic technique to solve real-world problems. 
+Text Books 
+1. Corman, Leiserson & Rivest, Introduction to Algorithms, MIT Press, 3rd Ed., (2009) 
+2. Narasimha Karumanchi, Data Structures and Algorithms Made Easy”, 2nd Ed., (2014) 
+Reference Books 
+1. Sahni, Sartaj, Data Structures, Algorithms and Applications in C++, Universities 
+Press, 2nd ed., (2005) 
+ 
+Approved in 3rd meeting of AC held on March 18, 2026.  

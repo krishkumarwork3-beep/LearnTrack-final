@@ -1,0 +1,53 @@
+ 
+
+UEC734: COMPILER CONSTRUCTION 
+L T P Cr 
+3 0 0 3.0 
+ 
+Course Objectives: To Gain the working knowledge of the major phases of compilation and develop 
+the ability to use formal attributed grammars for specifying the syntax and semantics of programming 
+languages. Learn about function and complexities of modern compilers and design a significant portion 
+of a compiler. 
+Introduction to Compiling  
+Analysis of the source program, Phases of a compiler, Cousins of the Compiler, Grouping of Phases, 
+Compiler construction tools. 
+Lexical Analysis 
+Regular Expression, Introduction to Finite Automata and Regular Expression, Conversion of Regular 
+Expression to NFA, Role of Lexical Analyzer, Input Buffering, Specification of Tokens. 
+Syntax Analysis                                                      
+Role of the Parser, Writing Grammars, Symbol Table, Context-Free Grammars, Top Down Parsing 
+with or without Backtracking, Recursive Descent Parsing, Non-Recursive Descent Parsing,  SLR 
+Parser, Canonical LR Parser, LALR Parser. Introduction to YACC and Integration with LEX. 
+Semantics Analysis and Intermediate Code Generation 
+Need for various static semantic analyses in declaration processing, name and scope analysis, 
+Semantic analysis through S-attribute and L-attribute grammar, Intermediate languages, Declarations, 
+Assignment Statements, Boolean Expressions, Case Statements, DAG representation of Basic Blocks, 
+A simple Code generator from DAG, Issues in the design of code generator, The target machine, 
+Runtime Storage management.  
+Error Handling Type checking, reporting and recovery from compilation errors, Classification of 
+errors. 
+Code Optimization and Run Time Environments   
+Principal Sources of Optimization, Optimization of Basic Blocks, Peephole Optimization, 
+Introduction to Global Data Flow Analysis, Source Language issues, Storage Organization, Static 
+Storage Management, Heap Storage management, Access to non-Local Names, Parameter Passing.  
+Course Learning Outcomes (CLOs): 
+After the completion of the course, the student will be able to: 
+1. Comprehend the working of major phases of compiler. 
+2. Apply top-down and bottom-up parsing techniques for the Parser construction. 
+3. Understand the basic data structures used in compiler construction such as abstract syntax trees, 
+symbol tables and three-address code 
+4. Understand target machine’s run time environment and techniques used for code generation. 
+Text Books: 
+1. Aho V. A., Ullman D. J., Sethi R. and Lam S. M., Compilers Principles, Techniques and Tools, 
+Pearson Education (2007), 2nd ed. 
+2. Levine J., Mason T., Brown D., Lex and Yacc, O‘Reilly (2012), 2nd ed 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Approved in 3rd meeting of AC held on March 18, 2026.  

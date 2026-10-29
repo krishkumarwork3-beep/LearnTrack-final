@@ -1,0 +1,99 @@
+ 
+
+UES101: ENGINEERING DRAWING 
+ L T P Cr 
+2 4 0 4.0 
+ 
+Course Objective: This module is dedicated to graphics and includes two sections: 2D drafting and 
+3D modelling of solid objects. This course is aimed at making the student understand the concepts 
+of projection systems, learn how to create projections of solid objects using first and third angle 
+orthographic projection as well as isometric and auxiliary 
+projection, concept of sectioning, to interpret the meaning and intent of toleranced dimensions and 
+to create/edit drawings using drafting software. In addition, this course shall give an insight on the 
+basic 3D modelling concepts like extrude, revolve, sweep, construction of complex solids. 
+Syllabus 
+ 
+Engineering Drawing Concepts 
+1. Introduction to Engineering Drawing 
+2. Projection systems: First angle and third angle projection system 
+3. Orthographic Projection: Points, Lines, Solid objects 
+4. Isometric Projections 
+5. Auxiliary Projections 
+6. Development of surfaces 
+7. Section of solids 
+8. Limits, fits and tolerances 
+ 
+2D Drafting 
+1. Management of screen menus commands 
+2. Creating basic drawing entities 
+3. Co-ordinate systems: Cartesian, polar and relative coordinates 
+4. Drawing limits, units of measurement and scale 
+5. Layering: organizing and maintaining the integrity of drawings 
+6. Design of prototype drawings as templates. 
+7. Editing/modifying drawing entities: selection of objects, object snap modes, editing commands, 
+8. Dimensioning: use of annotations, dimension types, properties and placement, adding text to 
+drawing 
+ 
+3D Modelling 
+1. Management of screen menus commands 
+2. Introduction to basic 3D modelling commands such as extrude, revolve, sweep etc. 
+3. Creation of 2D drawings from a 3D model 
+ 
+Micro Projects /Assignments: 
+ 
+1. Completing the views - Identification and drawing of missing lines and views in the projection 
+of objects 
+2. Projects related to orthographic and isometric projections Using wax blocks/soap bars/any soft 
+material to develop three dimensional object from given orthographic projections 
+3. a. 3D modelling of complex machine components 
+b. Development of production drawings of individual components from the model 
+ 
+Course Learning Objectives (CLO)  
+The students will be able to: 
+1. Creatively comprehend the geometrical details of common engineering objects 
+2. Draw dimensioned orthographic and isometric projections of simple engineering objects 
+3. Interpret the meaning and intent of limits, fits and tolerances in the drawing 
+Approved in 3rd meeting of AC held on March 18, 2026.  
+ 
+
+4. Create/edit the engineering drawings for simple engineering objects using 2D drafting 
+software 
+5. Create/edit 3D models of engineering components using 3D modelling software 
+ 
+Text Books 
+1. Jolhe, D.A., Engineering Drawing, Tata McGraw Hill, 2008 
+2. Davies, B. L., Yarwood, A., Engineering Drawing and Computer Graphics, Van Nostrand 
+Reinhold (UK), 1986 
+ 
+Reference Books 
+1. Gill, P.S., Geometrical Drawings, S.K. Kataria & Sons, Delhi (2008). 
+2. Gill, P.S., Machine Drawings, S.K. Kataria & Sons, Delhi (2013). 
+3. Mohan, K.R., Engineering Graphics, Dhanpat Rai Publishing Company (P) Ltd, Delhi (2002). 
+4. French, T. E., Vierck, C. J. and Foster, R. J., Fundamental of Engineering Drawing & Graphics 
+Technology, McGraw Hill Book Company, New Delhi (1986). 
+5. Rowan, J. and Sidwell , E. H., Graphics for Engineers, Edward Arnold, London (1968). 
+6. Mastering AutoCAD 2021 and AutoCAD LT 2021, Brian C. Benton, George Omura, Sybex - 
+John Wiley and Sons, Indiana (2021). 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Approved in 3rd meeting of AC held on March 18, 2026.  
