@@ -1556,7 +1556,7 @@ public class SemesterReplanService {
                 List<Topic> learned = new ArrayList<>();
                 for (Topic t : getTopicsForExam(simTopics, exam.getExamId())) {
                     if (t.getImportantFlag() == 1 && "REVISION".equalsIgnoreCase(t.getPhase())
-                            && t.getRevisionRemainingHours() > 0.05
+                            && t.getRevisionRemainingHours() >= 0.25   // a 5-minute leftover cannot fill a gap
                             && topicFillerCounts.getOrDefault(t.getTopicId(), 0) == 0) {
                         learned.add(t);
                     }
@@ -1575,7 +1575,7 @@ public class SemesterReplanService {
             }
             // 3. Previous-year papers, once the exam's planned topics are learned
             for (Exam exam : exams) {
-                if (exam.getPyqRemainingHours() > 0.05
+                if (exam.getPyqRemainingHours() >= 0.25
                         && scoringService.pyqEligible(exam, getTopicsForExam(simTopics, exam.getExamId()), date)) {
                     return new FillerCandidate("PYQ_PRACTICE", exam.getExamId(), getItemSubject(exam, simExamMap),
                             exam.getExamId(), false, exam.getPyqRemainingHours());
