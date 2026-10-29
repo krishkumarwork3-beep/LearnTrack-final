@@ -78,7 +78,7 @@ public class PriorityQueueService {
                         boolean inProg = (topic.getRemainingHours() < topic.getHoursNeeded() - 0.001)
                                 && (topic.getRemainingHours() > 0.001);
                         double score = (topic.getImportance() * Math.max(topic.getHoursNeeded(), 1.0)) / (double) Math.max(dl, 1);
-                        queue.offer(new PriorityItem(
+                        PriorityItem learnItem = new PriorityItem(
                                 PriorityItem.ItemType.TOPIC_LEARN,
                                 topic.getTopicId(),
                                 topic.getName(),
@@ -90,7 +90,9 @@ public class PriorityQueueService {
                                 topic.getSyllabusOrder(),
                                 topic.getImportance(),
                                 topic.getHoursNeeded()
-                        ));
+                        );
+                        learnItem.setPlanned(topic.isPlanned());
+                        queue.offer(learnItem);
                     }
                 } else if ("REVISION".equalsIgnoreCase(topic.getPhase())) {
                     if (topic.getRevisionRemainingHours() > 0 && scoringService.isRevisionDue(topic, exam, today)) {
@@ -115,13 +117,23 @@ public class PriorityQueueService {
             }
         }
 
-        // 2. Skills / Subtopics:
+        // 2. Skills / Subtopics: scored by the skill's priority, raised when a target date makes the
+        // remaining learning urgent, and for revisions that are overdue (spaced repetition slipping).
+        Map<Integer, Double> skillLearnRemaining = new HashMap<>();
+        if (subtopics != null) {
+            for (com.learntrack.model.SkillSubtopic sub : subtopics) {
+                if (!sub.isLearned()) {
+                    skillLearnRemaining.merge(sub.getSkillId(), Math.max(0.0, sub.getLearnRemainingHours()), Double::sum);
+                }
+            }
+        }
         Set<Integer> skillsWithSubtopics = new HashSet<>();
         if (subtopics != null) {
             for (com.learntrack.model.SkillSubtopic sub : subtopics) {
                 skillsWithSubtopics.add(sub.getSkillId());
                 Skill skill = skillMap.get(sub.getSkillId());
                 String skillName = (skill != null && skill.getName() != null) ? skill.getName() : "Skill";
+                double learnScore = skillScore(skill, skillLearnRemaining.getOrDefault(sub.getSkillId(), 0.0), today);
 
                 // (a) LEARN item: available immediately if not learned and hours remain
                 if (!sub.isLearned() && sub.getLearnRemainingHours() > 0.001) {
@@ -131,7 +143,7 @@ public class PriorityQueueService {
                             PriorityItem.ItemType.SKILL_LEARN,
                             sub.getSubtopicId(),
                             "Skill: " + skillName + " › " + sub.getName() + " (Learn)",
-                            1.0,
+                            learnScore,
                             sub.getLearnRemainingHours(),
                             sub.getSkillId(),
                             inProg,
@@ -151,7 +163,7 @@ public class PriorityQueueService {
                                 PriorityItem.ItemType.SKILL_REVISE,
                                 sub.getSubtopicId(),
                                 "Skill: " + skillName + " › " + sub.getName() + " (Revise)",
-                                1.0,
+                                reviseScore(skill, dueDate, today),
                                 sub.getReviseRemainingHours(),
                                 sub.getSkillId(),
                                 inProg,
@@ -170,7 +182,7 @@ public class PriorityQueueService {
                 if (skillsWithSubtopics.contains(skill.getSkillId())) {
                     continue;
                 }
-                double score = 1.0;
+                double score = skillScore(skill, 0.0, today);
                 queue.offer(new PriorityItem(
                         PriorityItem.ItemType.SKILL,
                         skill.getSkillId(),
@@ -215,5 +227,35 @@ public class PriorityQueueService {
         }
 
         return queue;
+    }
+
+    /**
+     * Skill learning score: priority weight (1..5 mapped like topic importance), multiplied by how
+     * many hours a day the remaining learning needs to hit the skill's target date. Open-ended skills
+     * keep their plain priority weight, so a "Top focus" skill always leads a "Someday" one.
+     */
+    static double skillScore(Skill skill, double learnHoursRemaining, LocalDate today) {
+        int priority = skill == null ? 3 : skill.getPriority();
+        double score = CoverageOptimizer.importanceWeight(priority);
+        LocalDate target = skill == null ? null : skill.getTargetDate();
+        if (target != null && learnHoursRemaining > 0) {
+            long days = Math.max(1, java.time.temporal.ChronoUnit.DAYS.between(today, target));
+            double hoursPerDay = learnHoursRemaining / days;
+            score *= 1.0 + Math.min(hoursPerDay, 4.0);
+            if (today.isAfter(target)) {
+                score *= 1.5; // overdue goal: catch up first
+            }
+        }
+        return score;
+    }
+
+    /** Revision score: priority weight, raised by one step for every week the review is overdue. */
+    static double reviseScore(Skill skill, LocalDate dueDate, LocalDate today) {
+        double score = CoverageOptimizer.importanceWeight(skill == null ? 3 : skill.getPriority());
+        if (dueDate != null && today.isAfter(dueDate)) {
+            long overdue = java.time.temporal.ChronoUnit.DAYS.between(dueDate, today);
+            score *= 1.0 + Math.min(overdue / 7.0, 3.0);
+        }
+        return score;
     }
 }

@@ -94,7 +94,7 @@ public class ExamScopeServiceTest {
         Topic topic1 = topicDAO.findByExamAndSubtopic(examId, subtopicId1);
         assertNotNull(topic1);
         assertEquals("Introduction", topic1.getName());
-        assertEquals(4, topic1.getImportance());
+        assertEquals(3, topic1.getImportance()); // inherits the subtopic importance (default Normal = 3)
         assertEquals(1, topic1.getDifficulty()); // Neutral difficulty (DifficultyMapper removed from planning)
         assertEquals(1.0, topic1.getHoursNeeded());
         assertEquals(1.0, topic1.getRemainingHours());

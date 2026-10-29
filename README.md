@@ -58,10 +58,12 @@ Once complete, the app auto-generates a full study plan starting from today.
 - Enter subject code (e.g., `UCS503`), type (`NORMAL`, `MST`, or `EST`), credits, marks, and exam date
 - If you have a syllabus file, go to **Subjects** tab → **Import Syllabus** to auto-generate topics
 
-### 2. Define Exam Scope
+### 2. Define Exam Scope and Topic Importance
 - Select exam in **Exams** tab → **Edit Scope**
 - Mark which syllabus subtopics are covered (hours to learn/revise per subtopic)
 - The planner schedules only in-scope content
+- In **Subjects**, rate every subtopic's **Importance** (Optional · Low · Normal · High · Must-know),
+  one at a time or per unit with the unit's **Importance** menu
 
 ### 3. Apply a Datesheet (MST/EST)
 - Go to the **Datesheet Analyser** tab
@@ -70,19 +72,37 @@ Once complete, the app auto-generates a full study plan starting from today.
 - If capacity is tight, a dialog opens to prioritize or trim topics
 
 ### 4. Add Skills
-- Go to the **Skills** tab → **Add Skill**
+- Go to the **Skills** tab → **Add Skill**, choosing a **Priority** (Someday … Top focus) and an optional **Target date**
 - Add subtopics with Learn Hours, Revise Hours, and "Revise after N days"
 - Tick "Learned" when complete; revision sessions appear automatically after the due date
-- Skills are scheduled after exam topics/PYQ, but roll over if missed
+- Skills are scheduled after exam work; higher priority skills get free time first, a tight target
+  date raises a skill's urgency, and overdue revisions climb the queue
+- Each skill card shows whether the plan finishes it before its target date
 
 ### 5. Daily Use
-- Open the **Dashboard** to see today's merged schedule
-- Click **Log Progress** on a session when done (mark DONE or CONTINUING with remaining hours)
-- Resize or swap sessions as needed; the planner refills freed time automatically
+- Open **Today** to see the day's schedule, what's up next, and how much is done
+- Tick a session when done, or double-click it to log partial progress
+- Resize or cancel sessions as needed; the planner refills freed time automatically
 
-### 6. Check Feasibility
-- The **Feasibility Bar** (top of Dashboard) shows needed hours vs. available capacity
-- If red, open the **Exams** tab → **Review topic priorities / capacity** to trim scope
+### 6. Check Coverage
+- **Plan insights** (Today page) shows, per exam, how much of the importance-weighted syllabus is
+  learned or planned before the exam date, and lists the topics that don't fit
+- The sidebar's **Syllabus coverage** card summarises it across all exams
+- If important topics don't fit, add free time, trim scope (**Exams → Review topic priorities / capacity**),
+  or lower the importance of topics that matter less
+
+## How the Planner Decides
+
+1. **Free time** for every day until the last exam is computed from the timetable, sleep routine and
+   exam-period routine.
+2. **Coverage optimizer** (`CoverageOptimizer`): each exam is worth `credits × marks`, shared among
+   its topics by importance weight (Must-know ≈ 12× Optional). Topics are considered by value per
+   hour, and one is accepted only if, for *every* exam date, all accepted work due by then still fits
+   in the free time before it (minus a configurable safety buffer). One revision cycle per topic and
+   the remaining PYQ hours are reserved.
+3. **Day-by-day scheduling**: planned topics go earliest-deadline-first; inside an exam, Must-know
+   topics come first (or syllabus order, see **Settings**). PYQ practice follows, then topics that
+   didn't fit (if time frees up), then skills.
 
 ## Database Schema Highlights
 

@@ -267,20 +267,29 @@ public class MainApp extends Application {
                 else if (newTab == tabSkills) skillFormController.loadSkills();
             });
 
-            ProgressBar replanBar = new ProgressBar();
+            ProgressBar replanBar = new ProgressBar(ProgressBar.INDETERMINATE_PROGRESS);
+            replanBar.getStyleClass().add("busy-strip");
             replanBar.setMaxWidth(Double.MAX_VALUE);
-            replanBar.setPrefHeight(6);
             replanBar.visibleProperty().bind(replanRunner.busyProperty());
             replanBar.managedProperty().bind(replanRunner.busyProperty());
 
-            Label wordmark = new Label("LearnTrack");
-            wordmark.getStyleClass().add("wordmark");
-            HBox appBar = new HBox(wordmark);
-            appBar.getStyleClass().add("app-bar");
-            appBar.setAlignment(Pos.CENTER_LEFT);
+            // The TabPane keeps hosting the pages (and its listeners); the sidebar drives it.
+            tabPane.getStyleClass().add("app-tabs");
+            Node sidebar = buildSidebar(tabPane, List.of(
+                    new NavEntry("PLAN", "Today", UiKit.Icon.HOME, tabDash),
+                    new NavEntry(null, "Calendar", UiKit.Icon.CALENDAR, tabCal),
+                    new NavEntry("STUDY", "Exams", UiKit.Icon.EXAM, tabExams),
+                    new NavEntry(null, "Subjects", UiKit.Icon.BOOK, tabTopics),
+                    new NavEntry(null, "Skills", UiKit.Icon.BOLT, tabSkills),
+                    new NavEntry("SETUP", "Datesheet", UiKit.Icon.SCAN, tabDatesheetAnalyser),
+                    new NavEntry(null, "Timetable", UiKit.Icon.GRID, timetableTab),
+                    new NavEntry(null, "Settings", UiKit.Icon.GEAR, tabSettings)));
 
-            VBox mainLayout = new VBox(appBar, replanBar, tabPane);
+            VBox content = new VBox(replanBar, tabPane);
             VBox.setVgrow(tabPane, Priority.ALWAYS);
+            HBox.setHgrow(content, Priority.ALWAYS);
+            HBox mainLayout = new HBox(sidebar, content);
+            mainLayout.getStyleClass().add("app-shell");
 
             // Toast overlay sits above the content at the bottom-right of the window.
             VBox toastLayer = new VBox();
@@ -332,6 +341,125 @@ public class MainApp extends Application {
         }
     }
 
+    // ------------------------------------------------------------------ sidebar
+
+    private record NavEntry(String section, String label, UiKit.Icon icon, Tab tab) {
+    }
+
+    private Label coverageValue;
+    private ProgressBar coverageBar;
+    private Label coverageHint;
+
+    /** Left navigation: brand, grouped pages with Ctrl+N hints, live coverage card, theme switch. */
+    private Node buildSidebar(TabPane tabPane, List<NavEntry> entries) {
+        Label markText = new Label("L");
+        markText.getStyleClass().add("brand-mark-text");
+        StackPane mark = new StackPane(markText);
+        mark.getStyleClass().add("brand-mark");
+        Label name = new Label("LearnTrack");
+        name.getStyleClass().add("brand-name");
+        Label tagline = new Label("Study planner");
+        tagline.getStyleClass().add("brand-tagline");
+        HBox brand = new HBox(10, mark, new VBox(0, name, tagline));
+        brand.getStyleClass().add("brand");
+
+        VBox nav = new VBox(2);
+        ToggleGroup group = new ToggleGroup();
+        java.util.Map<Tab, ToggleButton> buttons = new java.util.HashMap<>();
+        for (int i = 0; i < entries.size(); i++) {
+            NavEntry entry = entries.get(i);
+            if (entry.section() != null) {
+                Label section = new Label(entry.section());
+                section.getStyleClass().add("nav-section");
+                nav.getChildren().add(section);
+            }
+            ToggleButton button = new ToggleButton(entry.label(), UiKit.icon(entry.icon()));
+            button.getStyleClass().add("nav-item");
+            button.setToggleGroup(group);
+            button.setMaxWidth(Double.MAX_VALUE);
+            button.setTooltip(new Tooltip(entry.label() + "  (Ctrl+" + (i + 1) + ")"));
+            button.setOnAction(e -> {
+                tabPane.getSelectionModel().select(entry.tab());
+                button.setSelected(true); // a nav item cannot be toggled off
+            });
+            buttons.put(entry.tab(), button);
+            nav.getChildren().add(button);
+        }
+        Runnable syncSelection = () -> {
+            ToggleButton b = buttons.get(tabPane.getSelectionModel().getSelectedItem());
+            if (b != null) b.setSelected(true);
+        };
+        tabPane.getSelectionModel().selectedItemProperty().addListener((obs, o, n) -> syncSelection.run());
+        syncSelection.run();
+
+        // Live coverage card: what share of the exam-weighted syllabus the plan secures.
+        Label coverageTitle = new Label("Syllabus coverage");
+        coverageTitle.getStyleClass().add("sidebar-chip-title");
+        coverageValue = new Label("–");
+        coverageValue.getStyleClass().add("sidebar-chip-title");
+        HBox coverageHead = new HBox(6, coverageTitle, UiKit.spacer(), coverageValue);
+        coverageBar = new ProgressBar(0);
+        coverageBar.setMaxWidth(Double.MAX_VALUE);
+        coverageBar.setPrefHeight(6);
+        coverageHint = new Label("Planned before each exam");
+        coverageHint.getStyleClass().add("sidebar-chip-text");
+        coverageHint.setWrapText(true);
+        VBox coverageChip = new VBox(6, coverageHead, coverageBar, coverageHint);
+        coverageChip.getStyleClass().add("sidebar-chip");
+        refreshSidebarCoverage();
+        if (replanRunner != null) {
+            replanRunner.busyProperty().addListener((obs, was, busy) -> {
+                if (!busy) javafx.application.Platform.runLater(this::refreshSidebarCoverage);
+            });
+        }
+
+        Button themeToggle = new Button();
+        themeToggle.getStyleClass().add("sidebar-button");
+        themeToggle.setMaxWidth(Double.MAX_VALUE);
+        Runnable labelTheme = () -> {
+            boolean dark = Theme.isDarkActive();
+            themeToggle.setText(dark ? "Light mode" : "Dark mode");
+            themeToggle.setGraphic(UiKit.icon(dark ? UiKit.Icon.SUN : UiKit.Icon.MOON));
+        };
+        themeToggle.setOnAction(e -> {
+            boolean dark = !Theme.isDarkActive();
+            Theme.apply(primaryStage.getScene(), dark);
+            writeSetting(Theme.SETTING_KEY, dark ? "dark" : "light");
+            labelTheme.run();
+        });
+        javafx.application.Platform.runLater(labelTheme);
+
+        VBox footer = new VBox(8, coverageChip, themeToggle);
+        footer.getStyleClass().add("sidebar-footer");
+
+        Region grow = new Region();
+        VBox.setVgrow(grow, Priority.ALWAYS);
+        VBox sidebar = new VBox(brand, nav, grow, footer);
+        sidebar.getStyleClass().add("sidebar");
+        return sidebar;
+    }
+
+    private void refreshSidebarCoverage() {
+        if (coverageValue == null || replanService == null) {
+            return;
+        }
+        com.learntrack.service.CoveragePlan plan = replanService.getLastCoveragePlan();
+        if (plan == null || plan.getExams().isEmpty()) {
+            coverageValue.setText("–");
+            coverageBar.setProgress(0);
+            coverageHint.setText("Add exams with a syllabus scope to see coverage.");
+            return;
+        }
+        double pct = plan.overallCoverage();
+        coverageValue.setText(Math.round(pct * 100) + "%");
+        coverageBar.setProgress(pct);
+        int critical = plan.criticalAtRiskCount();
+        int risk = plan.atRiskCount();
+        coverageHint.setText(risk == 0 ? "Everything fits before its exam."
+                : critical > 0 ? critical + " high-priority topic(s) don't fit yet"
+                : risk + " low-priority topic(s) don't fit");
+    }
+
     private Node createSettingsView() {
         VBox page = new VBox(16);
         page.setPadding(new Insets(24));
@@ -369,6 +497,22 @@ public class MainApp extends Application {
         addSettingRow(grid, 2, "EST exam duration (minutes)",
                 "Length used for end-semester exam sittings.", estExamDurationSpinner);
 
+        ComboBox<String> orderChoice = new ComboBox<>();
+        orderChoice.getItems().addAll("Most important first", "Syllabus order");
+        orderChoice.setValue("SYLLABUS".equalsIgnoreCase(readSetting("planner_order_mode", "IMPORTANCE"))
+                ? "Syllabus order" : "Most important first");
+        addSettingRow(grid, 3, "Study order inside an exam",
+                "Must-know topics first is safest when time is short; syllabus order suits subjects that build on earlier units.",
+                orderChoice);
+
+        Spinner<Integer> bufferSpinner = new Spinner<>(0, 40, 10, 5);
+        bufferSpinner.setEditable(true);
+        bufferSpinner.getValueFactory().setValue((int) Math.round(
+                (1.0 - readDoubleSetting("planner_capacity_factor", 0.9)) * 100));
+        addSettingRow(grid, 4, "Safety buffer (% of free time)",
+                "Free time the planner keeps in reserve for slips when it decides which topics fit before an exam.",
+                bufferSpinner);
+
         Button btnSaveSettings = UiKit.primaryButton("Save Settings");
         if (replanRunner != null) {
             btnSaveSettings.disableProperty().bind(replanRunner.busyProperty());
@@ -378,6 +522,10 @@ public class MainApp extends Application {
                 settingsDAO.set("pyq_practice_hours", String.valueOf(pyqHoursSpinner.getValue()));
                 settingsDAO.set("mst_exam_duration_minutes", String.valueOf(examDurationSpinner.getValue()));
                 settingsDAO.set("est_exam_duration_minutes", String.valueOf(estExamDurationSpinner.getValue()));
+                settingsDAO.set("planner_order_mode",
+                        "Syllabus order".equals(orderChoice.getValue()) ? "SYLLABUS" : "IMPORTANCE");
+                settingsDAO.set("planner_capacity_factor",
+                        String.valueOf(1.0 - bufferSpinner.getValue() / 100.0));
 
                 Runnable afterReplan = () -> {
                     refreshAllViews();
@@ -728,6 +876,7 @@ public class MainApp extends Application {
     }
 
     private void refreshAllViews() {
+        refreshSidebarCoverage();
         if (dashboardView != null) dashboardView.refreshData();
         if (calendarGridView != null) calendarGridView.refreshCalendar();
         if (examFormController != null) examFormController.loadExams();

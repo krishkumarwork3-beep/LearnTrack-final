@@ -4,58 +4,93 @@
  * Light theme tokens live on .root; learntrack-dark.css only overrides the same tokens.
  * Everything below is built from those tokens, so both themes stay in step.
  *
- * Spacing scale (px): 4, 8, 16, 24, 32, 48. Radii: 4 for controls, 8 for cards.
- * Type scale: 24 page title, 16 section title, 13 body, 11 to 12 caption.
+ * Spacing scale (px): 4, 8, 12, 16, 24, 32. Radii: 8 for controls, 14 for cards, 999 for pills.
+ * Type scale: 26 page title, 16 section title, 13 body, 11 to 12 caption.
+ *
+ * Weights: JavaFX does not map -fx-font-weight 500/600 onto the bundled Inter faces, so medium
+ * and semibold text name their face directly ("Inter Medium", "Inter SemiBold").
  */
 
 .root {
-    /* surfaces */
-    -lt-bg: #f6f5f2;
+    /* surfaces: cool paper with white cards */
+    -lt-bg: #f3f5fb;
     -lt-surface: #ffffff;
-    -lt-surface-alt: #faf9f6;
-    -lt-surface-sunken: #efede8;
+    -lt-surface-alt: #f8f9fd;
+    -lt-surface-sunken: #eef1f8;
 
     /* lines */
-    -lt-border: #e4e1da;
-    -lt-border-strong: #cfcbc2;
+    -lt-border: #e3e7f1;
+    -lt-border-strong: #cdd3e1;
 
     /* text */
-    -lt-text: #1c1b1a;
-    -lt-text-body: #33312d;
-    -lt-muted: #6b6862;
-    -lt-faint: #6f6b64;
+    -lt-text: #0f172a;
+    -lt-text-body: #253047;
+    -lt-muted: #5e6a82;
+    -lt-faint: #8a94a8;
     -lt-on-accent: #ffffff;
 
-    /* ink and one warm accent, used sparingly */
-    -lt-primary: #1e3a5f;
-    -lt-primary-hover: #162b47;
-    -lt-primary-soft: #e8ecf1;
-    -lt-accent: #b45309;
-    -lt-accent-soft: #fbf0e3;
+    /* indigo ink with a violet companion */
+    -lt-primary: #4f46e5;
+    -lt-primary-hover: #4338ca;
+    -lt-primary-soft: #eef0ff;
+    -lt-accent: #7c3aed;
+    -lt-accent-soft: #f3edff;
 
-    /* semantic colours, muted on purpose */
-    -lt-success: #2f7d5b;
-    -lt-success-soft: #eef5f1;
-    -lt-warning: #a16207;
-    -lt-warning-soft: #fbf6ea;
-    -lt-warning-border: #d9a441;
-    -lt-danger: #b4412f;
-    -lt-danger-soft: #f8e9e6;
-    -lt-danger-border: #d9a08f;
-    -lt-info: #2f5d7c;
-    -lt-info-soft: #e9f0f4;
-    -lt-violet: #6b5b8f;
-    -lt-violet-soft: #eeebf3;
+    /* semantic colours */
+    -lt-success: #059669;
+    -lt-success-soft: #e7f8f1;
+    -lt-warning: #b45309;
+    -lt-warning-soft: #fff6e6;
+    -lt-warning-border: #f3c26b;
+    -lt-danger: #dc2645;
+    -lt-danger-soft: #fdecef;
+    -lt-danger-border: #f4a5b3;
+    -lt-info: #2563eb;
+    -lt-info-soft: #eaf1ff;
+    -lt-violet: #7c3aed;
+    -lt-violet-soft: #f3edff;
+
+    /* activity palette: one hue per kind of block, used for pills and accent bars */
+    -lt-act-learn: #4f46e5;
+    -lt-act-learn-soft: #eef0ff;
+    -lt-act-revise: #9333ea;
+    -lt-act-revise-soft: #f6edff;
+    -lt-act-pyq: #d97706;
+    -lt-act-pyq-soft: #fff4e2;
+    -lt-act-skill: #0d9488;
+    -lt-act-skill-soft: #e3f7f4;
+    -lt-act-class: #2563eb;
+    -lt-act-class-soft: #eaf1ff;
+    -lt-act-meal: #ea580c;
+    -lt-act-meal-soft: #fff0e6;
+    -lt-act-sleep: #64748b;
+    -lt-act-sleep-soft: #eef1f6;
+    -lt-act-exam: #e11d48;
+    -lt-act-exam-soft: #ffe9ee;
+
+    /* sidebar */
+    -lt-nav-bg: linear-gradient(to bottom, #111827 0%, #1e1b4b 100%);
+    -lt-nav-text: #c7cbe0;
+    -lt-nav-muted: #7c83a3;
+    -lt-nav-hover: rgba(255, 255, 255, 0.07);
+    -lt-nav-active: rgba(129, 140, 248, 0.20);
+    -lt-nav-active-text: #ffffff;
+    -lt-nav-indicator: #a5b4fc;
+
+    /* hero gradient and elevation */
+    -lt-hero: linear-gradient(to right, #4f46e5 0%, #7c3aed 60%, #a855f7 100%);
+    -lt-shadow: rgba(15, 23, 42, 0.07);
+    -lt-shadow-strong: rgba(15, 23, 42, 0.16);
 
     /* calendar tints */
-    -lt-cal-study: #f2f0ea;
-    -lt-cal-study-border: #b9b3a5;
-    -lt-cal-done: #e7f1eb;
-    -lt-cal-done-border: #2f7d5b;
-    -lt-cal-eve: #f8f1df;
-    -lt-cal-eve-border: #d9a441;
-    -lt-cal-exam: #fbf0e3;
-    -lt-cal-window: #f8f1df;
+    -lt-cal-study: #f3f4fe;
+    -lt-cal-study-border: #c7cbf6;
+    -lt-cal-done: #e7f8f1;
+    -lt-cal-done-border: #059669;
+    -lt-cal-eve: #fff6e6;
+    -lt-cal-eve-border: #f3c26b;
+    -lt-cal-exam: #ffe9ee;
+    -lt-cal-window: #fff6e6;
 
     -fx-background-color: -lt-bg;
     -fx-font-family: "Inter";
@@ -712,7 +747,7 @@
 .table-row-cell.status-row-deficit-selected,
 .table-row-cell.status-row-tight-selected,
 .table-row-cell.status-row-fits-selected {
-    -fx-background-color: #d6e2ee;
+    -fx-background-color: #e4e7ff;
     -fx-border-color: transparent transparent -lt-border -lt-primary;
     -fx-border-width: 0 0 1 3;
     -fx-text-background-color: -lt-text;
@@ -726,7 +761,7 @@
 .pick-table .table-row-cell:filled:selected,
 .pick-table .table-row-cell:filled:selected:focused,
 .pick-table .table-row-cell:filled:selected:hover {
-    -fx-background-color: #c2d3e8;
+    -fx-background-color: #dfe2ff;
     -fx-border-color: transparent transparent transparent -lt-primary;
     -fx-border-width: 0 0 0 3;
 }
@@ -1411,7 +1446,7 @@
 
 /* The chosen category card matches the picked-row highlight from the improvement dialog. */
 .subject-item.row-picked {
-    -fx-background-color: #c2d3e8;
+    -fx-background-color: #dfe2ff;
     -fx-border-color: transparent transparent transparent -lt-primary;
     -fx-border-width: 0 0 0 3;
 }
@@ -1634,19 +1669,19 @@
 }
 
 .toast-success {
-    -fx-background-color: #2f7d5b;
+    -fx-background-color: #047857;
 }
 
 .toast-warn {
-    -fx-background-color: #8a5306;
+    -fx-background-color: #b45309;
 }
 
 .toast-danger {
-    -fx-background-color: #96372a;
+    -fx-background-color: #be123c;
 }
 
 .toast-info {
-    -fx-background-color: #1e3a5f;
+    -fx-background-color: #4338ca;
 }
 
 /* ------------------------------------------------------------------ dialogs */
@@ -1700,4 +1735,785 @@
     -fx-font-family: "Consolas", "Courier New", monospace;
     -fx-font-size: 11px;
     -fx-text-fill: -lt-muted;
+}
+
+/* ======================================================================================
+ * v2 component layer.
+ * Appended last so it wins over the base rules above at equal specificity. Everything is
+ * token driven; learntrack-dark.css re-points the tokens.
+ * ==================================================================================== */
+
+/* ---------------------------------------------------------------- type that really is bold */
+
+.page-title {
+    -fx-font-family: "Inter SemiBold";
+    -fx-font-size: 26px;
+    -fx-text-fill: -lt-text;
+}
+
+.section-title,
+.unit-title,
+.empty-state-title,
+.banner-title,
+.dialog-pane > .header-panel .label {
+    -fx-font-family: "Inter SemiBold";
+}
+
+.btn-primary,
+.btn-secondary,
+.btn-danger,
+.btn-danger-soft,
+.btn-ghost,
+.stat-value,
+.cell-strong,
+.subject-item .subject-code,
+.chip,
+.badge,
+.column-label,
+.table-view .column-header .label {
+    -fx-font-family: "Inter Medium";
+}
+
+.page-description {
+    -fx-font-size: 13.5px;
+    -fx-text-fill: -lt-muted;
+}
+
+.caption,
+.stat-label {
+    -fx-font-family: "Inter Medium";
+    -fx-text-fill: -lt-muted;
+    -fx-font-size: 11px;
+}
+
+/* ---------------------------------------------------------------- app shell */
+
+.app-shell {
+    -fx-background-color: -lt-bg;
+}
+
+.sidebar {
+    -fx-background-color: -lt-nav-bg;
+    -fx-padding: 20 14 16 14;
+    -fx-spacing: 3;
+    -fx-min-width: 228;
+    -fx-pref-width: 228;
+    -fx-max-width: 228;
+}
+
+.brand {
+    -fx-spacing: 10;
+    -fx-alignment: center-left;
+    -fx-padding: 0 8 14 6;
+}
+
+.brand-mark {
+    -fx-background-color: linear-gradient(to bottom right, #818cf8 0%, #c084fc 100%);
+    -fx-background-radius: 10;
+    -fx-min-width: 34;
+    -fx-min-height: 34;
+    -fx-max-width: 34;
+    -fx-max-height: 34;
+    -fx-alignment: center;
+    -fx-effect: dropshadow(gaussian, rgba(129, 140, 248, 0.45), 14, 0.2, 0, 3);
+}
+
+.brand-mark-text {
+    -fx-font-family: "Inter";
+    -fx-font-weight: bold;
+    -fx-font-size: 15px;
+    -fx-text-fill: #ffffff;
+}
+
+.brand-name {
+    -fx-font-family: "Inter SemiBold";
+    -fx-font-size: 16px;
+    -fx-text-fill: #ffffff;
+}
+
+.brand-tagline {
+    -fx-font-size: 11px;
+    -fx-text-fill: -lt-nav-muted;
+}
+
+.nav-section {
+    -fx-font-family: "Inter Medium";
+    -fx-font-size: 10.5px;
+    -fx-text-fill: -lt-nav-muted;
+    -fx-padding: 12 10 4 10;
+}
+
+.nav-item {
+    -fx-background-color: transparent;
+    -fx-background-radius: 9;
+    -fx-padding: 8 10 8 10;
+    -fx-text-fill: -lt-nav-text;
+    -fx-font-family: "Inter Medium";
+    -fx-font-size: 13px;
+    -fx-graphic-text-gap: 12;
+    -fx-alignment: center-left;
+    -fx-cursor: hand;
+    -fx-max-width: infinity;
+    -fx-border-width: 0;
+}
+
+.nav-item .icon-outline {
+    -fx-stroke: -lt-nav-muted;
+}
+
+.nav-item:hover {
+    -fx-background-color: -lt-nav-hover;
+    -fx-text-fill: #ffffff;
+}
+
+.nav-item:hover .icon-outline {
+    -fx-stroke: #ffffff;
+}
+
+.nav-item:selected {
+    -fx-background-color: -lt-nav-active;
+    -fx-text-fill: -lt-nav-active-text;
+}
+
+.nav-item:selected .icon-outline {
+    -fx-stroke: -lt-nav-indicator;
+}
+
+.sidebar-footer {
+    -fx-spacing: 8;
+    -fx-padding: 12 0 0 0;
+}
+
+.sidebar-chip {
+    -fx-background-color: rgba(255, 255, 255, 0.06);
+    -fx-background-radius: 12;
+    -fx-padding: 12;
+    -fx-spacing: 6;
+}
+
+.sidebar-chip-title {
+    -fx-font-family: "Inter Medium";
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 12px;
+}
+
+.sidebar-chip-text {
+    -fx-text-fill: -lt-nav-muted;
+    -fx-font-size: 11px;
+}
+
+.sidebar-button {
+    -fx-background-color: rgba(255, 255, 255, 0.06);
+    -fx-background-radius: 9;
+    -fx-text-fill: -lt-nav-text;
+    -fx-font-family: "Inter Medium";
+    -fx-font-size: 12px;
+    -fx-padding: 8 10 8 10;
+    -fx-graphic-text-gap: 10;
+    -fx-alignment: center-left;
+    -fx-max-width: infinity;
+    -fx-cursor: hand;
+}
+
+.sidebar-button:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.12);
+    -fx-text-fill: #ffffff;
+}
+
+.sidebar-button .icon-outline {
+    -fx-stroke: -lt-nav-text;
+}
+
+.sidebar .progress-bar > .track {
+    -fx-background-color: rgba(255, 255, 255, 0.10);
+}
+
+.sidebar .progress-bar > .bar {
+    -fx-background-color: linear-gradient(to right, #818cf8, #c084fc);
+}
+
+/* The main TabPane only hosts the pages; navigation lives in the sidebar. */
+.app-tabs > .tab-header-area {
+    -fx-pref-height: 0;
+    -fx-max-height: 0;
+    -fx-min-height: 0;
+    -fx-padding: 0;
+    visibility: hidden;
+}
+
+.app-tabs,
+.app-tabs > .tab-content-area {
+    -fx-background-color: -lt-bg;
+}
+
+.busy-strip {
+    -fx-pref-height: 3;
+    -fx-max-height: 3;
+}
+
+.busy-strip > .track {
+    -fx-background-color: transparent;
+    -fx-background-radius: 0;
+}
+
+.busy-strip > .bar {
+    -fx-background-color: linear-gradient(to right, -lt-primary, -lt-accent);
+    -fx-background-radius: 0;
+    -fx-background-insets: 0;
+}
+
+/* ---------------------------------------------------------------- cards */
+
+.card {
+    -fx-background-color: -lt-surface;
+    -fx-background-radius: 14;
+    -fx-border-color: -lt-border;
+    -fx-border-radius: 14;
+    -fx-padding: 18;
+    -fx-effect: dropshadow(gaussian, -lt-shadow, 18, 0.0, 0, 4);
+}
+
+.card-flat {
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
+}
+
+/* ---------------------------------------------------------------- buttons */
+
+.button {
+    -fx-background-radius: 9;
+    -fx-border-radius: 9;
+    -fx-cursor: hand;
+}
+
+.btn-primary {
+    -fx-background-color: linear-gradient(to bottom, #5b54ee 0%, #4f46e5 100%);
+    -fx-background-radius: 9;
+    -fx-text-fill: #ffffff;
+    -fx-padding: 8 16 8 16;
+    -fx-effect: dropshadow(gaussian, rgba(79, 70, 229, 0.30), 10, 0.0, 0, 3);
+}
+
+.btn-primary:hover {
+    -fx-background-color: linear-gradient(to bottom, #4f46e5 0%, #4338ca 100%);
+}
+
+.btn-primary:pressed {
+    -fx-effect: none;
+}
+
+.btn-secondary {
+    -fx-background-color: -lt-surface;
+    -fx-border-color: -lt-border-strong;
+    -fx-text-fill: -lt-text;
+    -fx-padding: 7 14 7 14;
+}
+
+.btn-secondary:hover {
+    -fx-background-color: -lt-surface-sunken;
+}
+
+.btn-ghost {
+    -fx-text-fill: -lt-primary;
+}
+
+.btn-ghost:hover {
+    -fx-background-color: -lt-primary-soft;
+}
+
+.btn-icon {
+    -fx-background-radius: 8;
+}
+
+.btn-icon:hover {
+    -fx-background-color: -lt-primary-soft;
+}
+
+.btn-icon:hover .icon-outline {
+    -fx-stroke: -lt-primary;
+}
+
+.btn-icon:hover .icon-glyph {
+    -fx-fill: -lt-primary;
+}
+
+/* Segmented buttons (date navigation, view switches). */
+.segmented {
+    -fx-background-color: -lt-surface;
+    -fx-background-radius: 10;
+    -fx-border-color: -lt-border;
+    -fx-border-radius: 10;
+    -fx-padding: 3;
+    -fx-spacing: 2;
+    -fx-alignment: center-left;
+}
+
+.segmented .button {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-background-radius: 7;
+    -fx-padding: 6 10 6 10;
+    -fx-text-fill: -lt-text-body;
+    -fx-font-family: "Inter Medium";
+}
+
+.segmented .button:hover {
+    -fx-background-color: -lt-surface-sunken;
+}
+
+/* ---------------------------------------------------------------- inputs */
+
+.text-field,
+.combo-box,
+.date-picker,
+.spinner,
+.choice-box {
+    -fx-background-radius: 9;
+    -fx-border-radius: 9;
+}
+
+.text-field:focused,
+.combo-box:focused,
+.spinner:focused,
+.text-area:focused {
+    -fx-border-color: -lt-primary;
+}
+
+/* ---------------------------------------------------------------- tables */
+
+.table-view {
+    -fx-background-radius: 14;
+    -fx-border-radius: 14;
+    -fx-effect: dropshadow(gaussian, -lt-shadow, 16, 0.0, 0, 3);
+}
+
+.table-view .column-header-background {
+    -fx-background-color: -lt-surface-alt;
+    -fx-background-radius: 14 14 0 0;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: -lt-muted;
+    -fx-font-size: 11.5px;
+}
+
+.table-row-cell {
+    -fx-cell-size: 44;
+}
+
+.table-row-cell:hover {
+    -fx-background-color: -lt-surface-alt;
+}
+
+.table-row-cell:selected,
+.table-row-cell.row-selected {
+    -fx-background-color: -lt-primary-soft;
+}
+
+.table-row-cell:selected .table-cell,
+.table-row-cell.row-selected .table-cell {
+    -fx-text-fill: -lt-text;
+}
+
+/* ---------------------------------------------------------------- progress */
+
+.progress-bar > .track {
+    -fx-background-color: -lt-surface-sunken;
+    -fx-background-radius: 99;
+}
+
+.progress-bar > .bar {
+    -fx-background-color: linear-gradient(to right, -lt-primary, -lt-accent);
+    -fx-background-radius: 99;
+    -fx-background-insets: 0;
+}
+
+.progress-bar-success > .bar {
+    -fx-background-color: -lt-success;
+}
+
+.progress-bar-warning > .bar {
+    -fx-background-color: -lt-warning;
+}
+
+.progress-bar-danger > .bar {
+    -fx-background-color: -lt-danger;
+}
+
+/* ---------------------------------------------------------------- pills, chips, badges */
+
+.chip,
+.badge {
+    -fx-background-radius: 99;
+    -fx-padding: 3 9 3 9;
+    -fx-font-size: 11px;
+}
+
+.pill {
+    -fx-background-radius: 99;
+    -fx-padding: 3 10 3 10;
+    -fx-font-family: "Inter Medium";
+    -fx-font-size: 11px;
+    -fx-graphic-text-gap: 6;
+}
+
+.pill-learn { -fx-background-color: -lt-act-learn-soft; -fx-text-fill: -lt-act-learn; }
+.pill-revise { -fx-background-color: -lt-act-revise-soft; -fx-text-fill: -lt-act-revise; }
+.pill-pyq { -fx-background-color: -lt-act-pyq-soft; -fx-text-fill: -lt-act-pyq; }
+.pill-skill { -fx-background-color: -lt-act-skill-soft; -fx-text-fill: -lt-act-skill; }
+.pill-class { -fx-background-color: -lt-act-class-soft; -fx-text-fill: -lt-act-class; }
+.pill-meal { -fx-background-color: -lt-act-meal-soft; -fx-text-fill: -lt-act-meal; }
+.pill-sleep { -fx-background-color: -lt-act-sleep-soft; -fx-text-fill: -lt-act-sleep; }
+.pill-exam { -fx-background-color: -lt-act-exam-soft; -fx-text-fill: -lt-act-exam; }
+.pill-other { -fx-background-color: -lt-surface-sunken; -fx-text-fill: -lt-muted; }
+
+/* Importance scale: optional (grey) .. must-know (rose). */
+.imp-1 { -fx-background-color: -lt-surface-sunken; -fx-text-fill: -lt-faint; }
+.imp-2 { -fx-background-color: -lt-info-soft; -fx-text-fill: -lt-info; }
+.imp-3 { -fx-background-color: -lt-primary-soft; -fx-text-fill: -lt-primary; }
+.imp-4 { -fx-background-color: -lt-warning-soft; -fx-text-fill: -lt-warning; }
+.imp-5 { -fx-background-color: -lt-danger-soft; -fx-text-fill: -lt-danger; }
+
+.importance-picker {
+    -fx-background-radius: 99;
+    -fx-border-radius: 99;
+    -fx-border-color: transparent;
+    -fx-padding: 0 2 0 2;
+    -fx-pref-height: 26;
+    -fx-min-height: 26;
+}
+
+.importance-picker > .list-cell {
+    -fx-background-color: transparent;
+    -fx-font-family: "Inter Medium";
+    -fx-font-size: 11px;
+    -fx-padding: 0 0 0 8;
+}
+
+.importance-picker > .arrow-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0 8 0 4;
+}
+
+.importance-picker.imp-1 > .list-cell { -fx-text-fill: -lt-faint; }
+.importance-picker.imp-2 > .list-cell { -fx-text-fill: -lt-info; }
+.importance-picker.imp-3 > .list-cell { -fx-text-fill: -lt-primary; }
+.importance-picker.imp-4 > .list-cell { -fx-text-fill: -lt-warning; }
+.importance-picker.imp-5 > .list-cell { -fx-text-fill: -lt-danger; }
+.importance-picker.imp-1 > .arrow-button > .arrow { -fx-background-color: -lt-faint; }
+.importance-picker.imp-2 > .arrow-button > .arrow { -fx-background-color: -lt-info; }
+.importance-picker.imp-3 > .arrow-button > .arrow { -fx-background-color: -lt-primary; }
+.importance-picker.imp-4 > .arrow-button > .arrow { -fx-background-color: -lt-warning; }
+.importance-picker.imp-5 > .arrow-button > .arrow { -fx-background-color: -lt-danger; }
+
+/* ---------------------------------------------------------------- KPI tiles and hero */
+
+.kpi {
+    -fx-background-color: -lt-surface;
+    -fx-background-radius: 14;
+    -fx-border-color: -lt-border;
+    -fx-border-radius: 14;
+    -fx-padding: 14 16 14 16;
+    -fx-spacing: 12;
+    -fx-alignment: center-left;
+    -fx-effect: dropshadow(gaussian, -lt-shadow, 16, 0.0, 0, 3);
+}
+
+.kpi-icon {
+    -fx-background-radius: 10;
+    -fx-min-width: 38;
+    -fx-min-height: 38;
+    -fx-max-width: 38;
+    -fx-max-height: 38;
+    -fx-alignment: center;
+}
+
+.kpi-icon .icon-outline { -fx-stroke-width: 1.7; }
+.kpi-icon-learn { -fx-background-color: -lt-act-learn-soft; }
+.kpi-icon-learn .icon-outline { -fx-stroke: -lt-act-learn; }
+.kpi-icon-exam { -fx-background-color: -lt-act-exam-soft; }
+.kpi-icon-exam .icon-outline { -fx-stroke: -lt-act-exam; }
+.kpi-icon-skill { -fx-background-color: -lt-act-skill-soft; }
+.kpi-icon-skill .icon-outline { -fx-stroke: -lt-act-skill; }
+.kpi-icon-revise { -fx-background-color: -lt-act-revise-soft; }
+.kpi-icon-revise .icon-outline { -fx-stroke: -lt-act-revise; }
+
+.kpi-value {
+    -fx-font-family: "Inter SemiBold";
+    -fx-font-size: 20px;
+    -fx-text-fill: -lt-text;
+}
+
+.kpi-label {
+    -fx-font-family: "Inter Medium";
+    -fx-font-size: 11.5px;
+    -fx-text-fill: -lt-muted;
+}
+
+.kpi-sub {
+    -fx-font-size: 11px;
+    -fx-text-fill: -lt-faint;
+}
+
+.hero {
+    -fx-background-color: -lt-hero;
+    -fx-background-radius: 18;
+    -fx-padding: 22 26 22 26;
+    -fx-spacing: 22;
+    -fx-alignment: center-left;
+    -fx-effect: dropshadow(gaussian, rgba(79, 70, 229, 0.35), 24, 0.0, 0, 8);
+}
+
+.hero-eyebrow {
+    -fx-font-family: "Inter Medium";
+    -fx-font-size: 12px;
+    -fx-text-fill: rgba(255, 255, 255, 0.78);
+}
+
+.hero-title {
+    -fx-font-family: "Inter SemiBold";
+    -fx-font-size: 26px;
+    -fx-text-fill: #ffffff;
+}
+
+.hero-text {
+    -fx-font-size: 13px;
+    -fx-text-fill: rgba(255, 255, 255, 0.88);
+}
+
+.hero-next {
+    -fx-background-color: rgba(255, 255, 255, 0.14);
+    -fx-background-radius: 12;
+    -fx-padding: 10 14 10 14;
+    -fx-spacing: 2;
+}
+
+.hero-next-label {
+    -fx-font-family: "Inter Medium";
+    -fx-font-size: 10.5px;
+    -fx-text-fill: rgba(255, 255, 255, 0.72);
+}
+
+.hero-next-title {
+    -fx-font-family: "Inter SemiBold";
+    -fx-font-size: 13.5px;
+    -fx-text-fill: #ffffff;
+}
+
+.hero .segmented {
+    -fx-background-color: rgba(255, 255, 255, 0.14);
+    -fx-border-color: transparent;
+}
+
+.hero .segmented .button {
+    -fx-text-fill: #ffffff;
+}
+
+.hero .segmented .button:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.18);
+}
+
+.hero .segmented .icon-outline {
+    -fx-stroke: #ffffff;
+}
+
+.hero .date-picker {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.hero .date-picker > .text-field {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: #ffffff;
+    -fx-font-family: "Inter Medium";
+    -fx-pref-column-count: 7;
+}
+
+.hero .date-picker > .arrow-button {
+    -fx-background-color: transparent;
+}
+
+.hero .date-picker > .arrow-button > .arrow {
+    -fx-background-color: #ffffff;
+}
+
+/* Progress ring: a track circle with an arc drawn over it. */
+.ring-track {
+    -fx-stroke: -lt-surface-sunken;
+    -fx-fill: transparent;
+}
+
+.ring-arc {
+    -fx-stroke: -lt-primary;
+    -fx-fill: transparent;
+    -fx-stroke-line-cap: round;
+}
+
+.ring-value {
+    -fx-font-family: "Inter SemiBold";
+    -fx-font-size: 15px;
+    -fx-text-fill: -lt-text;
+}
+
+.ring-caption {
+    -fx-font-size: 10px;
+    -fx-text-fill: -lt-muted;
+}
+
+.hero .ring-track { -fx-stroke: rgba(255, 255, 255, 0.22); }
+.hero .ring-arc { -fx-stroke: #ffffff; }
+.hero .ring-value { -fx-text-fill: #ffffff; -fx-font-size: 20px; }
+.hero .ring-caption { -fx-text-fill: rgba(255, 255, 255, 0.8); }
+
+.ring-ok .ring-arc { -fx-stroke: -lt-success; }
+.ring-warn .ring-arc { -fx-stroke: -lt-warning; }
+.ring-danger .ring-arc { -fx-stroke: -lt-danger; }
+
+/* ---------------------------------------------------------------- plan insights */
+
+.insight-row {
+    -fx-spacing: 12;
+    -fx-alignment: center-left;
+    -fx-padding: 8 0 8 0;
+    -fx-border-color: transparent transparent -lt-border transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.insight-name {
+    -fx-font-family: "Inter Medium";
+    -fx-text-fill: -lt-text;
+}
+
+.insight-meta {
+    -fx-font-size: 11px;
+    -fx-text-fill: -lt-muted;
+}
+
+.insight-pct {
+    -fx-font-family: "Inter SemiBold";
+    -fx-text-fill: -lt-text;
+    -fx-min-width: 42;
+    -fx-alignment: center-right;
+}
+
+.risk-item {
+    -fx-spacing: 8;
+    -fx-alignment: center-left;
+    -fx-padding: 4 0 4 0;
+}
+
+/* ---------------------------------------------------------------- schedule */
+
+.type-bar {
+    -fx-min-width: 4;
+    -fx-max-width: 4;
+    -fx-min-height: 22;
+    -fx-background-radius: 4;
+}
+
+.type-bar-learn { -fx-background-color: -lt-act-learn; }
+.type-bar-revise { -fx-background-color: -lt-act-revise; }
+.type-bar-pyq { -fx-background-color: -lt-act-pyq; }
+.type-bar-skill { -fx-background-color: -lt-act-skill; }
+.type-bar-class { -fx-background-color: -lt-act-class; }
+.type-bar-meal { -fx-background-color: -lt-act-meal; }
+.type-bar-sleep { -fx-background-color: -lt-act-sleep; }
+.type-bar-exam { -fx-background-color: -lt-act-exam; }
+.type-bar-other { -fx-background-color: -lt-border-strong; }
+
+.table-row-cell.day-row-fixed {
+    -fx-background-color: -lt-surface-alt;
+}
+
+.table-row-cell.day-row-fixed .table-cell {
+    -fx-text-fill: -lt-muted;
+}
+
+.table-row-cell.day-row-done .table-cell {
+    -fx-text-fill: -lt-faint;
+}
+
+.toolbar-row {
+    -fx-spacing: 8;
+    -fx-alignment: center-left;
+}
+
+/* ---------------------------------------------------------------- lists and subjects */
+
+.subject-item {
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+}
+
+.subject-item:hover {
+    -fx-background-color: -lt-surface-sunken;
+}
+
+.subject-item-selected,
+.subject-item-selected:hover {
+    -fx-background-color: -lt-primary-soft;
+}
+
+.subtopic-row {
+    -fx-background-radius: 8;
+}
+
+.subtopic-row:hover {
+    -fx-background-color: -lt-surface-alt;
+}
+
+.day-cell {
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+}
+
+.day-cell:hover {
+    -fx-border-color: -lt-primary;
+}
+
+/* ---------------------------------------------------------------- skills */
+
+.skill-meta {
+    -fx-spacing: 8;
+    -fx-alignment: center-left;
+}
+
+.goal-ok { -fx-text-fill: -lt-success; }
+.goal-warn { -fx-text-fill: -lt-warning; }
+.goal-danger { -fx-text-fill: -lt-danger; }
+
+/* ---------------------------------------------------------------- toasts and tooltips */
+
+.toast {
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, -lt-shadow-strong, 22, 0.0, 0, 6);
+}
+
+.tooltip {
+    -fx-background-color: #0f172a;
+    -fx-background-radius: 8;
+    -fx-text-fill: #f1f5f9;
+    -fx-font-size: 12px;
+    -fx-padding: 6 10 6 10;
+}
+
+/* Base .toggle-button .text / .button rules colour the inner Text node; re-point them in the sidebar. */
+.nav-item,
+.sidebar-button {
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
+}
+
+.nav-item .text,
+.sidebar-button .text {
+    -fx-fill: -lt-nav-text;
+}
+
+.nav-item:hover .text,
+.nav-item:selected .text,
+.sidebar-button:hover .text {
+    -fx-fill: #ffffff;
 }

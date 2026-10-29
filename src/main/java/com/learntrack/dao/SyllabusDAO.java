@@ -256,7 +256,7 @@ public class SyllabusDAO {
     }
 
     public List<SyllabusSubtopic> findSubtopicsByUnit(int unitId) throws SQLException {
-        String sql = "SELECT subtopic_id, unit_id, name, position, done, difficulty, hours_to_cover, hours_to_revise " +
+        String sql = "SELECT subtopic_id, unit_id, name, position, done, difficulty, hours_to_cover, hours_to_revise, importance " +
                      "FROM syllabus_subtopics WHERE unit_id = ? ORDER BY position";
         List<SyllabusSubtopic> subtopics = new ArrayList<>();
         try (Connection conn = DBConnection.getConnection();
@@ -264,40 +264,83 @@ public class SyllabusDAO {
             pstmt.setInt(1, unitId);
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
-                    subtopics.add(new SyllabusSubtopic(
-                            rs.getInt("subtopic_id"),
-                            rs.getInt("unit_id"),
-                            rs.getString("name"),
-                            rs.getInt("position"),
-                            rs.getInt("done") == 1,
-                            rs.getInt("difficulty"),
-                            rs.getDouble("hours_to_cover"),
-                            rs.getDouble("hours_to_revise")
-                    ));
+                    subtopics.add(mapSubtopic(rs));
                 }
             }
         }
         return subtopics;
     }
 
+    private static SyllabusSubtopic mapSubtopic(ResultSet rs) throws SQLException {
+        SyllabusSubtopic subtopic = new SyllabusSubtopic(
+                rs.getInt("subtopic_id"),
+                rs.getInt("unit_id"),
+                rs.getString("name"),
+                rs.getInt("position"),
+                rs.getInt("done") == 1,
+                rs.getInt("difficulty"),
+                rs.getDouble("hours_to_cover"),
+                rs.getDouble("hours_to_revise")
+        );
+        subtopic.setImportance(rs.getInt("importance"));
+        return subtopic;
+    }
+
+    /**
+     * Sets a subtopic's exam importance (1..5) and mirrors it onto every topic linked to it, so the
+     * planner and the exam views read the same value. Progress is never touched.
+     */
+    public void updateSubtopicImportance(int subtopicId, int importance) throws SQLException {
+        int value = SyllabusSubtopic.clampImportance(importance);
+        try (Connection conn = DBConnection.getConnection()) {
+            try (PreparedStatement pstmt = conn.prepareStatement(
+                    "UPDATE syllabus_subtopics SET importance = ? WHERE subtopic_id = ?")) {
+                pstmt.setInt(1, value);
+                pstmt.setInt(2, subtopicId);
+                pstmt.executeUpdate();
+            }
+            try (PreparedStatement pstmt = conn.prepareStatement(
+                    "UPDATE topics SET importance = ? WHERE subtopic_id = ?")) {
+                pstmt.setInt(1, value);
+                pstmt.setInt(2, subtopicId);
+                pstmt.executeUpdate();
+            }
+        }
+    }
+
+    /** Applies one importance level to every subtopic of a unit (and their linked topics). */
+    public void updateUnitImportance(int unitId, int importance) throws SQLException {
+        for (SyllabusSubtopic subtopic : findSubtopicsByUnit(unitId)) {
+            updateSubtopicImportance(subtopic.getSubtopicId(), importance);
+        }
+    }
+
+    /** subtopic_id -> importance for every subtopic of the semester; one query per replan. */
+    public Map<Integer, Integer> getImportanceMap(int semesterId) throws SQLException {
+        String sql = "SELECT s.subtopic_id, s.importance FROM syllabus_subtopics s " +
+                     "JOIN syllabus_units u ON s.unit_id = u.unit_id WHERE u.semester_id = ?";
+        Map<Integer, Integer> map = new HashMap<>();
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, semesterId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    map.put(rs.getInt("subtopic_id"), SyllabusSubtopic.clampImportance(rs.getInt("importance")));
+                }
+            }
+        }
+        return map;
+    }
+
     public SyllabusSubtopic findSubtopicById(int subtopicId) throws SQLException {
-        String sql = "SELECT subtopic_id, unit_id, name, position, done, difficulty, hours_to_cover, hours_to_revise " +
+        String sql = "SELECT subtopic_id, unit_id, name, position, done, difficulty, hours_to_cover, hours_to_revise, importance " +
                      "FROM syllabus_subtopics WHERE subtopic_id = ?";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, subtopicId);
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
-                    return new SyllabusSubtopic(
-                            rs.getInt("subtopic_id"),
-                            rs.getInt("unit_id"),
-                            rs.getString("name"),
-                            rs.getInt("position"),
-                            rs.getInt("done") == 1,
-                            rs.getInt("difficulty"),
-                            rs.getDouble("hours_to_cover"),
-                            rs.getDouble("hours_to_revise")
-                    );
+                    return mapSubtopic(rs);
                 }
             }
         }

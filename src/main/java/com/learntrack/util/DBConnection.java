@@ -115,6 +115,32 @@ public class DBConnection {
         migrateWeekdayStudyPreferenceLimitEnabled(conn);
         migrateSkillSubtopicsTable(conn);
         migrateSkillsLastPracticedDefault(conn);
+        migrateSyllabusSubtopicsImportanceColumn(conn);
+        migrateSkillsPriorityColumns(conn);
+    }
+
+    /**
+     * Adds syllabus_subtopics.importance (1 optional .. 5 must-know, default 3) and resets linked
+     * topics to the same neutral value, so the planner's value model starts from a consistent baseline.
+     */
+    static void migrateSyllabusSubtopicsImportanceColumn(Connection conn) throws SQLException {
+        if (tableHasColumn(conn, "syllabus_subtopics", "importance")) return;
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("ALTER TABLE syllabus_subtopics ADD COLUMN importance INTEGER NOT NULL DEFAULT 3");
+            stmt.execute("UPDATE topics SET importance = 3 WHERE subtopic_id IS NOT NULL");
+        }
+    }
+
+    /** Adds skills.priority (1..5) and skills.target_date (optional goal date). */
+    static void migrateSkillsPriorityColumns(Connection conn) throws SQLException {
+        try (Statement stmt = conn.createStatement()) {
+            if (!tableHasColumn(conn, "skills", "priority")) {
+                stmt.execute("ALTER TABLE skills ADD COLUMN priority INTEGER NOT NULL DEFAULT 3");
+            }
+            if (!tableHasColumn(conn, "skills", "target_date")) {
+                stmt.execute("ALTER TABLE skills ADD COLUMN target_date TEXT");
+            }
+        }
     }
 
     /**

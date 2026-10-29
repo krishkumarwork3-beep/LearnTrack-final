@@ -117,7 +117,7 @@ public class ScoringService {
         }
         boolean hasImportantTopic = false;
         for (Topic t : topicsForExam) {
-            if (t.getImportantFlag() != 1) {
+            if (t.getImportantFlag() != 1 || !t.isPlanned()) { // topics that do not fit never block PYQ
                 continue;
             }
             hasImportantTopic = true;

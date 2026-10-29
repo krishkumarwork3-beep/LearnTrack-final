@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 public class SyllabusParser {
 
     private static final Pattern SUBJECT_HEADER_PATTERN = Pattern.compile(
-            "^([A-Z]{3}\\d{3})\\s*:\\s*(.+)$", Pattern.CASE_INSENSITIVE);
+            "^([A-Z]{3}(?:\\d{3}|\\*{3}))\\s*(?::|[-\\u2013]\\s)\\s*(.+)$", Pattern.CASE_INSENSITIVE);   // "UCS503: ...", "UNC***: ...", "UNC513- ..."
 
     private static final String[] CONTENT_START_MARKERS = {
             "Course Objectives", "course objectives"
@@ -287,7 +287,8 @@ public class SyllabusParser {
 
     /** Hard stop: nothing after these is syllabus content. */
     private static final Pattern HARD_STOP_LINE = Pattern.compile(
-            "^(?:text\\s*books?|reference\\s*books?|recommended\\s+(?:books|readings?)|suggested\\s+readings?)\\b.*",
+            "^(?:text\\s*books?|reference\\s*books?|recommended\\s+(?:books|readings?)|suggested\\s+readings?"
+            + "|evaluation\\s+scheme)\\b.*",
             Pattern.CASE_INSENSITIVE);
 
     /**
@@ -295,8 +296,32 @@ public class SyllabusParser {
      * (Laboratory Work sits in the middle of multi-unit syllabi; Course Outcomes sit above the syllabus).
      */
     private static final Pattern SOFT_SKIP_LINE = Pattern.compile(
-            "^(?:laboratory\\s+work|lab(?:oratory)?\\s+(?:work|experiments?)|course\\s+(?:learning\\s+)?outcomes?)\\b.*",
+            "^(?:laboratory\\s+work|lab(?:oratory)?\\s+(?:work|experiments?)"
+            + "|(?:micro|minor)\\s+projects?\\b|assignments?\\s*:?\\s*$|self[-\\s]learn(?:ing)?\\b)\\b.*",
             Pattern.CASE_INSENSITIVE);
+
+    /**
+     * Outcomes / learning-objectives section (a numbered list of "Understand ...", "Apply ..."
+     * statements, never syllabus content). Matches every heading variant seen in scheme booklets:
+     * "Course Learning Outcomes (CLOs):", "Course Learning Objectives (CLO)", "Course outcomes",
+     * "Learning Outcomes", "CLOs:" and the bare "After / Upon / On (the successful) completion of ..." lead-in.
+     * Plain "Course Objective:" is NOT matched: it is a one-paragraph intro that often sits right above
+     * the syllabus.
+     */
+    private static final Pattern OUTCOMES_LINE = Pattern.compile(
+            "^(?:course\\s+(?:learning\\s+)?(?:outcomes?|objectives?)\\s*\\(\\s*clos?\\s*\\)"
+            + "|course\\s+learning\\s+(?:outcomes?|objectives?)"
+            + "|course\\s+outcomes?|learning\\s+outcomes?|expected\\s+outcomes?"
+            + "|clos?\\s*:"
+            + "|(?:after|upon|on)\\s+(?:the\\s+)?(?:successful\\s+)?completion\\s+of\\b)(?!\\p{L}).*",
+            Pattern.CASE_INSENSITIVE);
+
+    /** "The students will be able to:", "Students should be able to" - lead-in of an outcomes list. */
+    private static final Pattern OUTCOME_LEAD_IN = Pattern.compile(
+            "(?i).*\\b(?:able\\s+to|will\\s+be|should\\s+be|students?|learners?)\\b.*");
+
+    /** A numbered or bulleted list item ("1. ...", "(2) ...", "a) ..."), used to recognise outcome lists. */
+    private static final Pattern LIST_ITEM_LINE = Pattern.compile("^(?:\\(?\\d{1,2}[.)]|[a-z][.)]|\\u2022)\\s*.*");
 
     /** Page-footer "Approved in 1st meeting of Academic Council ... Revised in ..." (may wrap onto a second line). */
     private static final Pattern APPROVED_LINE = Pattern.compile("^approved\\s+in\\b.*", Pattern.CASE_INSENSITIVE);
@@ -310,8 +335,12 @@ public class SyllabusParser {
     /** Header-ish lines that are never syllabus content. */
     private static final Pattern SKIP_LINE = Pattern.compile(
             "^(?:(?:detailed\\s+)?syllabus|course\\s+contents?)\\s*:?\\s*$"
-            + "|^L\\s+T\\s+P\\s+Cr\\s*$"
-            + "|^\\d+\\s+\\d+\\s+\\d+\\s+[\\d.]+\\s*$", Pattern.CASE_INSENSITIVE);
+            + "|^(?:.*\\s)?L\\s+T\\s+P(?:\\s+Cr)?(?:\\s+[\\d.]+){0,4}\\s*$"   // "L T P Cr", "L T P", "MACHINE LEARNING L T P 3 0 2"
+            + "|^\\d+\\s+\\d+\\s+\\d+(?:\\s+[\\d.]+)?\\s*$", Pattern.CASE_INSENSITIVE);
+
+    /** A bare "Syllabus" / "Course contents" line. */
+    private static final Pattern SYLLABUS_MARKER = Pattern.compile(
+            "^(?:(?:detailed\\s+)?syllabus|course\\s+contents?)\\s*:?\\s*$", Pattern.CASE_INSENSITIVE);
 
     /** Units that are really metadata (dropped from the result). */
     private static final Pattern NON_CONTENT_NAME = Pattern.compile(
@@ -342,19 +371,296 @@ public class SyllabusParser {
             return new ArrayList<>();
         }
 
+        // Strategies are tried in their historical order and the first plausible result wins, so
+        // every layout that parsed correctly before keeps exactly the same result. Only when a
+        // strategy produces something implausible (empty units, outcome sentences as unit names...)
+        // do the other readings compete, and the best-scoring one is returned.
         List<ParsedUnit> numbered = parseNumberedUnitLines(lines);
-        if (!numbered.isEmpty()) {
-            return numbered;
+        if (!numbered.isEmpty() && isPlausible(numbered)) {
+            return refineItems(numbered);
         }
 
-        List<ParsedUnit> units = parseColonUnits(lines);
+        List<ParsedUnit> colon = parseColonUnits(lines);
+        if (numbered.isEmpty() && colon.size() >= 2 && isPlausible(colon)) {
+            return refineItems(colon);
+        }
 
-        // Fallback: single line containing several "Title Case:" headers
+        List<List<ParsedUnit>> candidates = new ArrayList<>();
+        candidates.add(numbered);
+        candidates.add(colon);
+        candidates.add(parseHeadingBlocks(lines));
+        candidates.add(parseLeadClauseBlocks(lines));
+        // single line containing several "Title Case:" headers
         long nonEmpty = lines.stream().filter(l -> !l.isEmpty()).count();
-        if (units.isEmpty() && nonEmpty == 1) {
-            units.addAll(parseSingleLineUnits(lines.stream().filter(l -> !l.isEmpty()).findFirst().get()));
+        if (nonEmpty == 1) {
+            candidates.add(parseSingleLineUnits(lines.stream().filter(l -> !l.isEmpty()).findFirst().get()));
+        }
+
+        List<ParsedUnit> best = new ArrayList<>();
+        double bestScore = Double.NEGATIVE_INFINITY;
+        for (List<ParsedUnit> c : candidates) {
+            double s = score(c);
+            if (s > bestScore) { bestScore = s; best = c; }
+        }
+        return refineItems(best);
+    }
+
+    /** Items longer than this were almost certainly never split. */
+    private static final int RUN_ON_ITEM = 120;
+
+    /**
+     * Last clean-up pass, touching only run-on items (longer than {@link #RUN_ON_ITEM}):
+     * <ul>
+     *   <li>an unclosed "(" in the source ("models (Residual approach, Walter model, ...") hides every
+     *       comma after it, so the item is re-split as if the bracket were not there;</li>
+     *   <li>items chained with spaced dashes ("A – B - C - D") are split on the dashes.</li>
+     * </ul>
+     * Normal-length items are returned unchanged, so well-parsed syllabi are not affected.
+     */
+    static List<ParsedUnit> refineItems(List<ParsedUnit> units) {
+        for (ParsedUnit u : units) {
+            Map<String, String> out = new LinkedHashMap<>();
+            for (String item : u.getSubtopics()) {
+                for (String piece : refineItem(item)) out.putIfAbsent(piece.toLowerCase(), piece);
+            }
+            u.setSubtopics(new ArrayList<>(out.values()));
         }
         return units;
+    }
+
+    private static List<String> refineItem(String item) {
+        List<String> result = new ArrayList<>();
+        if (item.length() <= RUN_ON_ITEM) {
+            result.add(item);
+            return result;
+        }
+        String prefix = "";
+        String body = item;
+        int colon = item.indexOf(": ");
+        if (colon > 0 && colon < 60 && !item.substring(0, colon).contains("(")) {   // keep "Heading: " prefixes
+            prefix = item.substring(0, colon + 2);
+            body = item.substring(colon + 2);
+        }
+        List<String> parts;
+        if (parenDepth(body) > 0) {
+            parts = splitTopLevel(body.replace("(", " ").replace(")", " "), true);
+        } else if (body.split("\\s[-\\u2013\\u2014]\\s").length >= 3) {
+            parts = List.of(body.split("\\s[-\\u2013\\u2014]\\s"));
+        } else {
+            result.add(item);
+            return result;
+        }
+        for (String p : parts) {
+            String c = cleanItem(p);
+            if (!c.isEmpty()) result.add(prefix + c);
+        }
+        if (result.isEmpty()) result.add(item);
+        return result;
+    }
+
+    // ---------------------------------------------------------------------
+    //  Choosing between readings
+    // ---------------------------------------------------------------------
+
+    /** Unit names that are really learning-outcome statements ("Understand ...", "Apply ..."). */
+    private static final Pattern OUTCOME_VERB_NAME = Pattern.compile(
+            "^(?:unit\\s+\\w+\\.\\s*)?(?:to\\s+)?(?:understand|apply|analy[sz]e|evaluate|determine|solve|learn|explain|"
+            + "demonstrate|comprehend|design|develop|identify|describe|assess|examine|model|characteri[sz]e|find|"
+            + "discriminate|establish|correlate|appreciate|implement|interpret|use|compute|formulate|construct|"
+            + "recogni[sz]e|define|illustrate|summari[sz]e|compare|create|perform|make|acquire|gain|the\\s+basics)\\b.*",
+            Pattern.CASE_INSENSITIVE);
+
+    /**
+     * Sanity check on a reading: most units must have sub-topics and unit names must look like
+     * titles, not sentences.
+     */
+    static boolean isPlausible(List<ParsedUnit> units) {
+        if (units.isEmpty()) return false;
+        int empty = 0, sentenceNames = 0;
+        for (ParsedUnit u : units) {
+            if (u.getSubtopics().isEmpty()) empty++;
+            String n = u.getName();
+            if (wordCount(n) > 12 || OUTCOME_VERB_NAME.matcher(n).matches()) sentenceNames++;
+        }
+        return empty * 3 <= units.size() && sentenceNames * 3 <= units.size();
+    }
+
+    /**
+     * Quality score of a reading. Rewards units that carry sub-topics, penalises empty units,
+     * sentence-like unit names and run-on items that were never split.
+     */
+    static double score(List<ParsedUnit> units) {
+        if (units == null || units.isEmpty()) return Double.NEGATIVE_INFINITY;
+        double s = 0;
+        for (ParsedUnit u : units) {
+            int n = u.getSubtopics().size();
+            s += n == 0 ? -3 : 2 + 0.5 * Math.min(n, 12);
+            String name = u.getName();
+            if (wordCount(name) > 12) s -= 4;
+            if (OUTCOME_VERB_NAME.matcher(name).matches()) s -= 4;
+            for (String item : u.getSubtopics()) {
+                if (item.length() > 160) s -= 1;
+            }
+        }
+        if (units.size() == 1) s -= 4;   // one giant unit is rarely the intended structure
+        return s;
+    }
+
+    // ---------------------------------------------------------------------
+    //  Stand-alone headings: a short title on its own line, then a paragraph or a numbered list
+    //
+    //      Lexical Analysis                       Engineering Drawing Concepts
+    //      Regular Expression, Finite ...         1. Introduction to Engineering Drawing
+    //      ... Specification of Tokens.           2. Projection systems: First angle, ...
+    // ---------------------------------------------------------------------
+
+    private static final Pattern ITEM_MARKER = Pattern.compile("^(?:\\u2022|\\(?\\d{1,2}[.)]|[a-z][.)])\\s*");
+
+    static List<ParsedUnit> parseHeadingBlocks(List<String> lines) {
+        int maxLen = 0;
+        for (String l : lines) maxLen = Math.max(maxLen, l.length());
+
+        List<Integer> heads = new ArrayList<>();
+        for (int i = 0; i < lines.size(); i++) {
+            if (isStandaloneHeading(lines, i, maxLen)) heads.add(i);
+        }
+        List<ParsedUnit> units = new ArrayList<>();
+        if (heads.size() < 2) return units;
+
+        for (int h = 0; h < heads.size(); h++) {
+            int from = heads.get(h) + 1;
+            int to = h + 1 < heads.size() ? heads.get(h + 1) : lines.size();
+            String name = lines.get(heads.get(h)).replaceAll("[\\s:]+$", "").trim();
+
+            boolean listBody = false;
+            for (int i = from; i < to; i++) {
+                if (ITEM_MARKER.matcher(lines.get(i)).find()) { listBody = true; break; }
+            }
+
+            Map<String, String> subs = new LinkedHashMap<>();
+            if (listBody) {
+                // numbered / bulleted items; unmarked lines continue the item above
+                List<StringBuilder> items = new ArrayList<>();
+                for (int i = from; i < to; i++) {
+                    String l = lines.get(i);
+                    if (l.isEmpty()) continue;
+                    Matcher m = ITEM_MARKER.matcher(l);
+                    if (m.find()) {
+                        items.add(new StringBuilder(l.substring(m.end()).trim()));
+                    } else if (!items.isEmpty()) {
+                        appendLine(items.get(items.size() - 1), l);
+                    } else {
+                        items.add(new StringBuilder(l));
+                    }
+                }
+                for (StringBuilder item : items) {
+                    for (String clause : splitTopLevel(item.toString(), false)) {
+                        for (String it : expandClause(clause)) subs.putIfAbsent(it.toLowerCase(), it);
+                    }
+                }
+            } else {
+                StringBuilder body = new StringBuilder();
+                for (int i = from; i < to; i++) {
+                    if (!lines.get(i).isEmpty()) appendLine(body, lines.get(i));
+                }
+                for (String it : extractSubtopics(body.toString())) subs.putIfAbsent(it.toLowerCase(), it);
+            }
+            if (NON_CONTENT_NAME.matcher(name).matches()) continue;
+            units.add(new ParsedUnit(name, new ArrayList<>(subs.values())));
+        }
+        return units;
+    }
+
+    // ---------------------------------------------------------------------
+    //  Lead-clause paragraphs: the first ';'-clause of each paragraph is the unit title
+    //
+    //      Basic Prompting Techniques; Writing clear and effective instructions; Using simple
+    //      examples in prompts; Role-based prompting for different tasks
+    // ---------------------------------------------------------------------
+
+    static List<ParsedUnit> parseLeadClauseBlocks(List<String> lines) {
+        List<StringBuilder> blocks = new ArrayList<>();
+        StringBuilder cur = null;
+        for (String l : lines) {
+            if (l.isEmpty()) { cur = null; continue; }
+            if (cur == null) { cur = new StringBuilder(); blocks.add(cur); }
+            appendLine(cur, l);
+        }
+
+        List<ParsedUnit> units = new ArrayList<>();
+        int leadBlocks = 0;
+        for (StringBuilder b : blocks) {
+            String text = b.toString().trim();
+            String[] h = headerOf(text);
+            int semi = topLevelIndex(text, ';');
+            int colon = topLevelIndex(text, ':');
+            if (h != null && (semi < 0 || (colon >= 0 && colon < semi))) {
+                // an ordinary "Name: items" paragraph mixed into the document
+                if (!NON_CONTENT_NAME.matcher(h[0]).matches()) units.add(new ParsedUnit(h[0], extractSubtopics(h[1])));
+                continue;
+            }
+            if (semi > 0) {
+                String lead = cleanItem(text.substring(0, semi));
+                if (!lead.isEmpty() && wordCount(lead) <= 8 && Character.isUpperCase(lead.charAt(0))) {
+                    List<String> items = new ArrayList<>();
+                    for (String part : splitTopLevel(text.substring(semi + 1), false)) {
+                        String c = cleanItem(part);
+                        if (!c.isEmpty()) items.add(c);
+                    }
+                    units.add(new ParsedUnit(lead, items));
+                    leadBlocks++;
+                    continue;
+                }
+            }
+            if (!units.isEmpty()) {
+                for (String part : splitTopLevel(text, false)) {
+                    String c = cleanItem(part);
+                    if (!c.isEmpty()) units.get(units.size() - 1).addSubtopic(c);
+                }
+            }
+        }
+        return leadBlocks >= 2 ? units : new ArrayList<>();
+    }
+
+    /** Index of the first {@code ch} outside parentheses, or -1. */
+    private static int topLevelIndex(String s, char ch) {
+        int depth = 0;
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c == '(') depth++;
+            else if (c == ')') depth = Math.max(0, depth - 1);
+            else if (c == ch && depth == 0) return i;
+        }
+        return -1;
+    }
+
+    /**
+     * A heading line: short, starts with a capital, carries no list punctuation, does not end a
+     * sentence, starts a fresh block (after a blank line or a finished sentence) and is followed by
+     * content rather than by another heading.
+     */
+    private static boolean isStandaloneHeading(List<String> lines, int i, int maxLen) {
+        String l = lines.get(i);
+        if (l.isEmpty() || ITEM_MARKER.matcher(l).find()) return false;
+        String t = l.endsWith(":") ? l.substring(0, l.length() - 1).trim() : l;
+        if (t.isEmpty()) return false;
+        boolean capital = Character.isUpperCase(t.charAt(0))
+                || (t.length() > 1 && Character.isDigit(t.charAt(0)) && Character.isLetter(t.charAt(1)));   // "2D Drafting"
+        if (!capital) return false;
+        if (wordCount(t) > 9 || t.length() > 70) return false;
+        if (maxLen >= 60 && t.length() > 0.7 * maxLen) return false;
+        if (t.matches(".*[,;:].*") || t.matches(".*[.!?]$")) return false;
+        if (NON_CONTENT_NAME.matcher(t).matches() || OUTCOME_VERB_NAME.matcher(t).matches()) return false;
+
+        int p = i - 1;
+        if (p >= 0 && !lines.get(p).isEmpty() && !endsSentence(lines.get(p))) return false;
+
+        int n = i + 1;
+        while (n < lines.size() && lines.get(n).isEmpty()) n++;
+        if (n >= lines.size()) return false;
+        String next = lines.get(n);
+        // the next line must be content: a list item or a line clearly longer than a heading
+        return ITEM_MARKER.matcher(next).find() || next.length() > Math.max(t.length() + 10, 40);
     }
 
     // ---------------------------------------------------------------------
@@ -375,7 +681,10 @@ public class SyllabusParser {
 
         List<String> out = new ArrayList<>();
         boolean carryBullet = false;
-        int skip = 0;   // 0 = reading, 1 = inside a soft-skipped section, 2 = just after an "Approved in" line
+        // 0 = reading, 1 = inside a soft-skipped section, 2 = just after an "Approved in" line,
+        // 3 = inside an outcomes list (ends at a "Unit"/"Syllabus" line or a new "Title: ..." paragraph)
+        int skip = 0;
+        boolean outcomeBreak = true;   // in mode 3: the previous line closed a sentence or was blank
 
         for (String raw : t.split("\n", -1)) {
             String line = raw.trim();
@@ -392,6 +701,7 @@ public class SyllabusParser {
             line = line.replaceAll(" {2,}", " ").trim();
 
             if (line.isEmpty()) {
+                if (skip == 3) { outcomeBreak = true; continue; }
                 if (skip == 1) continue;
                 if (bullet) {
                     carryBullet = true;            // bullet alone on a line: belongs to the next text line
@@ -408,17 +718,36 @@ public class SyllabusParser {
 
             if (skip == 1) {
                 if (RESUME_LINE.matcher(probe).matches()) skip = 0; else continue;
+            } else if (skip == 3) {
+                // Outcomes are numbered statements; the syllabus resumes at a unit heading or at an
+                // unnumbered "Title: ..." line that starts a fresh sentence.
+                String[] head = headerOf(probe);
+                boolean resume = RESUME_LINE.matcher(probe).matches()
+                        || (outcomeBreak && !LIST_ITEM_LINE.matcher(line).matches()
+                            && Character.isUpperCase(probe.charAt(0)) && head != null
+                            && !OUTCOME_LEAD_IN.matcher(head[0]).matches());
+                if (!resume) {
+                    outcomeBreak = endsSentence(probe);
+                    continue;
+                }
+                skip = 0;
             } else if (skip == 2) {
                 skip = 0;
                 if (APPROVED_TAIL.matcher(probe).matches() && headerOf(probe) == null) continue;
             }
 
+            if (SYLLABUS_MARKER.matcher(probe).matches()) {
+                // "Syllabus" separates the intro from the content: keep it as a paragraph break
+                if (!out.isEmpty() && !out.get(out.size() - 1).isEmpty()) out.add("");
+                continue;
+            }
             if (SUBJECT_HEADER_PATTERN.matcher(probe).matches() || SKIP_LINE.matcher(probe).matches()) {
                 continue;
             }
             if (HARD_STOP_LINE.matcher(probe).matches()) {
                 break;                             // books / readings: nothing after is syllabus content
             }
+            if (OUTCOMES_LINE.matcher(probe).matches()) { skip = 3; outcomeBreak = true; continue; }
             if (SOFT_SKIP_LINE.matcher(probe).matches()) { skip = 1; continue; }
             if (APPROVED_LINE.matcher(probe).matches()) { skip = 2; continue; }
             out.add(line);
@@ -470,9 +799,15 @@ public class SyllabusParser {
                 }
                 String[] h = headerOf(block.get(0));
                 if (h != null) {
-                    names.add(h[0]);
-                    bodies.add(new StringBuilder(h[1]));
-                    for (int i = 1; i < block.size(); i++) appendLine(bodies.get(bodies.size() - 1), block.get(i));
+                    // the paragraph starts a unit; a later line may still start another one
+                    // ("...Radix Sort." / "Trees and their applications: ..."), decided line by line
+                    int before = names.size();
+                    feedLines(block, names, bodies, true);
+                    if (names.size() == before) {           // feedLines declined the first line
+                        names.add(h[0]);
+                        bodies.add(new StringBuilder(h[1]));
+                        for (int i = 1; i < block.size(); i++) appendLine(bodies.get(bodies.size() - 1), block.get(i));
+                    }
                 } else if (!bodies.isEmpty()) {
                     for (String l : block) appendLine(bodies.get(bodies.size() - 1), l);
                 }
@@ -498,6 +833,12 @@ public class SyllabusParser {
      * does not look like the wrapped tail of the previous line.
      */
     private static void feedLines(List<String> lines, List<String> names, List<StringBuilder> bodies) {
+        feedLines(lines, names, bodies, false);
+    }
+
+    /** @param forceFirst the first line opens a new paragraph, so a header there always starts a unit */
+    private static void feedLines(List<String> lines, List<String> names, List<StringBuilder> bodies,
+                                  boolean forceFirst) {
         // Bullet-led units ("• Verbal Ability: ...", "• Quantitative Reasoning: ..."): when the headers
         // are bulleted, ONLY bulleted lines may start a unit - everything else is wrapped text.
         int bulletHeaders = 0;
@@ -512,18 +853,42 @@ public class SyllabusParser {
         int maxLen = 0;
         for (String l : lines) maxLen = Math.max(maxLen, l.length());
 
+        // Some booklets end every unit's last line with a stray comma ("... Bio sensors,") before the
+        // next "Quantum Size Effect: ..." line. When that happens at least twice with short Title-Case
+        // headings, a comma no longer proves the next heading is wrapped text.
+        // A label that occurs more than once ("RAPIDS acceleration: ...") is an inline tag inside a unit,
+        // never a unit of its own.
+        String lowerDoc = String.join("\n", lines).toLowerCase();
+        java.util.function.Predicate<String> uniqueLabel = title -> {
+            String needle = title.toLowerCase() + ":";
+            int first = lowerDoc.indexOf(needle);
+            return first >= 0 && lowerDoc.indexOf(needle, first + 1) < 0;
+        };
+        int commaLed = 0;
+        for (int i = 1; i < lines.size(); i++) {
+            String[] h = headerOf(lines.get(i));
+            if (h != null && lines.get(i - 1).trim().endsWith(",") && isTitleCaseHeading(h[0])
+                    && uniqueLabel.test(h[0])) commaLed++;
+        }
+        boolean trailingCommaStyle = commaLed >= 2;
+
         String prev = null;
+        boolean first = true;
         for (String line : lines) {
             String[] h = headerOf(line);
             boolean bulleted = line.startsWith("\u2022");
             boolean startsUnit = h != null;
+            boolean forced = first && forceFirst && startsUnit;
+            first = false;
 
-            if (startsUnit && bulletUnits && !bulleted) startsUnit = false;
+            if (startsUnit && bulletUnits && !bulleted && !forced) startsUnit = false;
 
-            if (startsUnit && !bulletUnits && !bodies.isEmpty()) {
+            if (startsUnit && !forced && !bulletUnits && !bodies.isEmpty()) {
                 StringBuilder last = bodies.get(bodies.size() - 1);
                 int words = wordCount(h[0]);
-                if (endsOpen(last)) {
+                boolean strayComma = trailingCommaStyle && last.toString().trim().endsWith(",")
+                        && parenDepth(last) <= 0 && isTitleCaseHeading(h[0]) && uniqueLabel.test(h[0]);
+                if (endsOpen(last) && !strayComma) {
                     // previous line stops mid-list (",", ";", "-", ":" or open "(" or "and"): a wrapped inner heading
                     startsUnit = false;
                 } else if (prev != null && !endsSentence(prev)
@@ -542,6 +907,18 @@ public class SyllabusParser {
             }
             prev = line;
         }
+    }
+
+    /** 1-6 words, first word capitalised, and no lower-case word except short joiners ("and", "of", ...) ... */
+    private static boolean isTitleCaseHeading(String title) {
+        String[] words = title.trim().split("\\s+");
+        if (words.length == 0 || words.length > 6 || !Character.isUpperCase(words[0].charAt(0))) return false;
+        int lower = 0;
+        for (String w : words) {
+            if (!w.isEmpty() && Character.isLowerCase(w.charAt(0))
+                    && !w.matches("(?i)and|of|in|for|to|the|on|with|&")) lower++;
+        }
+        return lower <= 1;   // "Synthesis and processing" still counts
     }
 
     /** Two physical lines of (almost) the same width: typical of hard-wrapped text. */
@@ -737,7 +1114,7 @@ public class SyllabusParser {
 
     /** "Unit 1. Title", "Unit 2: Title", "Unit-I", "Unit-II", "1. Title", "2: Title" */
     private static final Pattern NUMBERED_UNIT_PATTERN = Pattern.compile(
-            "^\\s*(?:unit[-\\s]*(\\d+|[IVX]+)(?![A-Za-z])|(?<![\\w.])(\\d+)(?=\\s*[.:)](?:\\s|$)))"
+            "^\\s*(?:unit[-\\s]*(\\d+|[IVX]+)(?![A-Za-z])|(?<![\\w.])(\\d{1,2})(?=\\s*[.:)](?:\\s|$)))"   // 1-2 digits: "2025." is a wrapped year, not unit 2025
             + "\\s*[.:)\\-\\u2013\\u2014]?\\s*(.*)$",
             Pattern.CASE_INSENSITIVE);
 

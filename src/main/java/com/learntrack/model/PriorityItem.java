@@ -30,6 +30,8 @@ public class PriorityItem implements Comparable<PriorityItem> {
     private long syllabusOrder = Long.MAX_VALUE;
     private int importance = 1;
     private double hoursNeeded = 0.0;
+    /** False for topics the coverage optimizer could not fit before their exam. */
+    private boolean planned = true;
 
     public PriorityItem() {
     }
@@ -69,14 +71,23 @@ public class PriorityItem implements Comparable<PriorityItem> {
     }
 
     /**
-     * Tier 0 = topic (LEARN / REVISE) - must be scheduled first.
-     * Tier 1 = PYQ (only after all tier-0 topic items are exhausted).
-     * Tier 2 = Skills (strictly lower priority tier than all exam topics and PYQ).
+     * Tier 0 = planned topic (LEARN / REVISE): fits before its exam, scheduled first.
+     * Tier 1 = PYQ (eligible once the planned topics of its exam are learned).
+     * Tier 2 = topic the optimizer could not fit: studied with any time left over.
+     * Tier 3 = Skills (strictly lower priority than all exam work).
      */
     public int tier() {
-        if (isTopic()) return 0;
+        if (isTopic()) return planned ? 0 : 2;
         if (isPyq()) return 1;
-        return 2;
+        return 3;
+    }
+
+    public boolean isPlanned() {
+        return planned;
+    }
+
+    public void setPlanned(boolean planned) {
+        this.planned = planned;
     }
 
     /**
@@ -151,7 +162,15 @@ public class PriorityItem implements Comparable<PriorityItem> {
             }
         }
 
-        // If one is LEARN and one is REVISE/SKILL, or both are REVISE/SKILL/PYQ:
+        // LEARN vs REVISE: earliest exam first, then new material before another revision pass
+        // (one revision per planned topic is already reserved in the coverage budget).
+        if (a.isTopic() && b.isTopic() && learnA != learnB) {
+            int dlCmp = Long.compare(a.getDaysLeft(), b.getDaysLeft());
+            if (dlCmp != 0) return dlCmp;
+            return learnA ? -1 : 1;
+        }
+
+        // Both are REVISE, SKILL or PYQ:
         int scCmp = Double.compare(b.getScore(), a.getScore());
         if (scCmp != 0) return scCmp;
 

@@ -32,11 +32,12 @@ public class TopicFormController {
     private static final DateTimeFormatter SHORT_DATE = DateTimeFormatter.ofPattern("d MMM yyyy");
 
     // Subtopic table columns, shared by the header row and the rows themselves.
-    private static final double STUDIED_COL = 56;
-    private static final double STATUS_COL = 150;
-    private static final double HOURS_COL = 76;
+    private static final double STUDIED_COL = 50;
+    private static final double STATUS_COL = 116;
+    private static final double HOURS_COL = 62;
     private static final double ACTIONS_COL = 138;
     private static final double ROW_GAP = 8;
+    private static final double IMPORTANCE_COL = 106;
 
     private final ExamDAO examDAO;
     private final SemesterDAO semesterDAO;
@@ -222,7 +223,8 @@ public class TopicFormController {
 
         Node okButton = dialog.getDialogPane().lookupButton(ButtonType.OK);
         if (okButton != null) {
-            okButton.disableProperty().bind(codeField.textProperty().trim().isEmpty());
+            okButton.disableProperty().bind(javafx.beans.binding.Bindings.createBooleanBinding(
+                    () -> codeField.getText() == null || codeField.getText().trim().isEmpty(), codeField.textProperty()));
         }
         codeField.setOnAction(e -> {
             Node ok = dialog.getDialogPane().lookupButton(ButtonType.OK);
@@ -602,7 +604,7 @@ public class TopicFormController {
         btnDown.setDisable(index == total - 1);
         btnDown.setOnAction(e -> handleMoveUnit(unit, 1));
 
-        HBox titleRow = new HBox(8, btnCollapse, unitName, btnHours, btnRename, btnDelete, btnUp, btnDown);
+        HBox titleRow = new HBox(8, btnCollapse, unitName, unitImportanceMenu(unit), btnHours, btnRename, btnDelete, btnUp, btnDown);
         titleRow.setAlignment(Pos.CENTER_LEFT);
 
         ProgressBar progressBar = new ProgressBar(totalSubs > 0 ? (double) doneCount / totalSubs : 0);
@@ -624,11 +626,12 @@ public class TopicFormController {
         // cannot grow and the headers drift away from the values.
         hTopic.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(hTopic, Priority.ALWAYS);
+        Label hImportance = fixedColumn(columnLabel("Importance"), IMPORTANCE_COL);
         Label hStatus = fixedColumn(columnLabel("Status"), STATUS_COL);
         Label hLearn = fixedColumn(columnLabel("Learn"), HOURS_COL);
         Label hRevise = fixedColumn(columnLabel("Revise"), HOURS_COL);
         Label hActions = fixedColumn(columnLabel("Actions"), ACTIONS_COL);
-        HBox colHeaders = new HBox(ROW_GAP, hStudied, hTopic, hStatus, hLearn, hRevise, hActions);
+        HBox colHeaders = new HBox(ROW_GAP, hStudied, hTopic, hImportance, hStatus, hLearn, hRevise, hActions);
         colHeaders.setAlignment(Pos.CENTER_LEFT);
 
         VBox subtopicsBox = new VBox(4);
@@ -744,8 +747,54 @@ public class TopicFormController {
         actions.setPrefWidth(ACTIONS_COL);
         actions.setAlignment(Pos.CENTER_LEFT);
 
-        row.getChildren().addAll(studiedBox, topicLabel, status, learnCell, reviseCell, actions);
+        row.getChildren().addAll(studiedBox, topicLabel, importancePicker(subtopic), status, learnCell, reviseCell, actions);
         return row;
+    }
+
+    // ------------------------------------------------------------------ importance
+
+    /**
+     * How much a subtopic matters for the exam. The planner uses it to decide which topics to
+     * cover first and which to drop when time is short, so every change replans.
+     */
+    private Node importancePicker(SyllabusSubtopic subtopic) {
+        ComboBox<Integer> picker = UiKit.levelPicker(subtopic.getImportance(),
+                SyllabusSubtopic::importanceLabel, level -> {
+                    try {
+                        syllabusDAO.updateSubtopicImportance(subtopic.getSubtopicId(), level);
+                        subtopic.setImportance(level);
+                        scheduleDebounceReplan(activeSemesterId);
+                    } catch (SQLException ex) {
+                        showError("Importance could not be updated", ex.getMessage());
+                    }
+                });
+        picker.setTooltip(new Tooltip("How important this topic is for the exam.\n"
+                + "Must-know topics are planned first; Optional ones are the first to go when time is short."));
+        fixedColumn(picker, IMPORTANCE_COL);
+        return picker;
+    }
+
+    /** Sets one importance level for every subtopic of a unit. */
+    private Node unitImportanceMenu(SyllabusUnit unit) {
+        MenuButton menu = new MenuButton("Importance");
+        menu.getStyleClass().add("btn-ghost");
+        menu.setTooltip(new Tooltip("Set the importance of every subtopic in this unit"));
+        for (int level = 5; level >= 1; level--) {
+            final int value = level;
+            MenuItem item = new MenuItem("All " + SyllabusSubtopic.importanceLabel(value));
+            item.setOnAction(e -> {
+                try {
+                    syllabusDAO.updateUnitImportance(unit.getUnitId(), value);
+                    refreshSyllabusDisplay();
+                    scheduleDebounceReplan(activeSemesterId);
+                    UiKit.toast("Unit marked " + SyllabusSubtopic.importanceLabel(value) + ".");
+                } catch (SQLException ex) {
+                    showError("Importance could not be updated", ex.getMessage());
+                }
+            });
+            menu.getItems().add(item);
+        }
+        return menu;
     }
 
     // ------------------------------------------------------------------ inline hours editing

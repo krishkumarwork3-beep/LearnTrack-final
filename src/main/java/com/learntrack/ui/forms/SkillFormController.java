@@ -43,6 +43,10 @@ public class SkillFormController {
     private final VBox skillCardsContainer = new VBox(16);
     private TextField newSkillNameField;
     private TextField newSkillCategoryField;
+    private ComboBox<Integer> newSkillPriority;
+    private DatePicker newSkillTarget;
+    private static final java.time.format.DateTimeFormatter GOAL_DATE =
+            java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH);
 
     public SkillFormController(SkillDAO skillDAO, SemesterDAO semesterDAO,
                                SemesterReplanService replanService, Runnable onDataChanged) {
@@ -92,12 +96,24 @@ public class SkillFormController {
             btnAddSkill.disableProperty().bind(replanRunner.busyProperty());
         }
 
+        newSkillPriority = UiKit.levelPicker(3, Skill::priorityLabel, null);
+        newSkillPriority.setPrefWidth(130);
+        newSkillPriority.setPrefHeight(34);
+        newSkillTarget = new DatePicker();
+        newSkillTarget.setPromptText("Optional");
+        newSkillTarget.setPrefWidth(150);
+
         VBox nameBox = new VBox(4, smallCaption("Skill name"), newSkillNameField);
         VBox categoryBox = new VBox(4, smallCaption("Category"), newSkillCategoryField);
-        HBox addSkillBar = new HBox(12, nameBox, categoryBox, btnAddSkill);
+        VBox priorityBox = new VBox(4, smallCaption("Priority"), newSkillPriority);
+        VBox targetBox = new VBox(4, smallCaption("Target date"), newSkillTarget);
+        HBox addSkillBar = new HBox(12, nameBox, categoryBox, priorityBox, targetBox, btnAddSkill);
         addSkillBar.setAlignment(Pos.BOTTOM_LEFT);
 
-        VBox addCard = UiKit.card(UiKit.sectionTitle("Add a skill"), addSkillBar);
+        VBox addCard = UiKit.card(UiKit.sectionTitle("Add a skill"), addSkillBar,
+                UiKit.hint("Skills use the time exam work leaves free. Higher priority skills go first; a target date "
+                        + "speeds a skill up when its remaining hours get tight."));
+        addCard.setSpacing(12);
 
         ScrollPane scrollPane = new ScrollPane(skillCardsContainer);
         scrollPane.setFitToWidth(true);
@@ -118,7 +134,10 @@ public class SkillFormController {
     public void loadSkills() {
         skillCardsContainer.getChildren().clear();
         try {
-            List<Skill> skills = skillDAO.getAll();
+            List<Skill> skills = new ArrayList<>(skillDAO.getAll());
+            // Highest priority first, then the nearest goal date.
+            skills.sort(Comparator.comparingInt((Skill s) -> -s.getPriority())
+                    .thenComparing(s -> s.getTargetDate() == null ? LocalDate.MAX : s.getTargetDate()));
             if (skills.isEmpty()) {
                 skillCardsContainer.getChildren().add(UiKit.emptyState("No skills yet",
                         "Add a skill above, then split it into subtopics you can schedule and revise."));
@@ -212,10 +231,29 @@ public class SkillFormController {
             titleRow.getChildren().add(UiKit.status(UiKit.Kind.SUCCESS, "Covered"));
         }
 
+        // Priority can be changed in place; the goal line says whether the plan meets the target.
+        ComboBox<Integer> priorityPicker = UiKit.levelPicker(skill.getPriority(), Skill::priorityLabel, level -> {
+            try {
+                skill.setPriority(level);
+                skillDAO.update(skill);
+                triggerReplan();
+            } catch (SQLException ex) {
+                showError("Priority could not be updated", ex.getMessage());
+            }
+        });
+        priorityPicker.setTooltip(new Tooltip("Priority: higher priority skills get free time first"));
+        HBox metaRow = new HBox(8, priorityPicker);
+        metaRow.getStyleClass().add("skill-meta");
+        Label goal = goalStatus(skill, subtopics, upcomingLearn);
+        if (goal != null) {
+            metaRow.getChildren().add(goal);
+        }
+        VBox titleBox = new VBox(6, titleRow, metaRow);
+
         HBox actionBox = new HBox(8, btnAddSubtopic, btnEditSkill, btnDeleteSkill);
         actionBox.setAlignment(Pos.CENTER_RIGHT);
 
-        HBox headerBox = new HBox(12, titleRow, UiKit.spacer(), progressBox, actionBox);
+        HBox headerBox = new HBox(12, titleBox, UiKit.spacer(), progressBox, actionBox);
         headerBox.setAlignment(Pos.CENTER_LEFT);
 
         card.getChildren().add(headerBox);
@@ -235,6 +273,57 @@ public class SkillFormController {
         }
 
         return card;
+    }
+
+    /**
+     * Goal line for a skill: when its last planned learning session falls compared with the
+     * target date, or how much is left when there is no target.
+     */
+    private Label goalStatus(Skill skill, List<SkillSubtopic> subtopics, Map<Integer, List<LocalDate>> upcomingLearn) {
+        double remaining = 0.0;
+        LocalDate lastPlanned = null;
+        boolean unscheduled = false;
+        for (SkillSubtopic st : subtopics) {
+            if (st.isLearned() || st.getLearnRemainingHours() <= 0.01) continue;
+            remaining += st.getLearnRemainingHours();
+            List<LocalDate> dates = upcomingLearn.get(st.getSubtopicId());
+            if (dates == null || dates.isEmpty()) {
+                unscheduled = true;
+                continue;
+            }
+            for (LocalDate d : dates) {
+                if (lastPlanned == null || d.isAfter(lastPlanned)) lastPlanned = d;
+            }
+        }
+        LocalDate target = skill.getTargetDate();
+        Label label;
+        if (subtopics.isEmpty()) {
+            return target == null ? null : goalLabel("Target " + target.format(GOAL_DATE), "goal-warn");
+        }
+        if (remaining <= 0.01) {
+            label = goalLabel("All subtopics learned", "goal-ok");
+        } else if (target == null) {
+            label = goalLabel(com.learntrack.util.DurationFormat.format(remaining) + " left to learn"
+                    + (lastPlanned != null && !unscheduled ? " · planned by " + lastPlanned.format(GOAL_DATE) : ""), null);
+        } else if (unscheduled || lastPlanned == null) {
+            label = goalLabel("Target " + target.format(GOAL_DATE) + " · not all sessions fit yet", "goal-warn");
+        } else if (lastPlanned.isAfter(target)) {
+            label = goalLabel("Behind: plan finishes " + lastPlanned.format(GOAL_DATE) + ", target "
+                    + target.format(GOAL_DATE), "goal-danger");
+        } else {
+            label = goalLabel("On track for " + target.format(GOAL_DATE) + " · finishes "
+                    + lastPlanned.format(GOAL_DATE), "goal-ok");
+        }
+        return label;
+    }
+
+    private Label goalLabel(String text, String styleClass) {
+        Label label = new Label(text);
+        label.getStyleClass().add("hint");
+        if (styleClass != null) {
+            label.getStyleClass().add(styleClass);
+        }
+        return label;
     }
 
     private TableView<SkillSubtopic> createSubtopicsTable(Skill skill, List<SkillSubtopic> subtopics,
@@ -662,9 +751,13 @@ public class SkillFormController {
 
         try {
             Skill skill = new Skill(null, name, category, 3, null);
+            skill.setPriority(newSkillPriority.getValue() == null ? 3 : newSkillPriority.getValue());
+            skill.setTargetDate(newSkillTarget.getValue());
             skillDAO.insert(skill);
             newSkillNameField.clear();
             newSkillCategoryField.setText("General");
+            newSkillPriority.setValue(3);
+            newSkillTarget.setValue(null);
             UiKit.toast("Skill added: " + name);
             triggerReplan();
         } catch (SQLException e) {
@@ -675,13 +768,22 @@ public class SkillFormController {
     private void showEditSkillDialog(Skill skill) {
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.setTitle("Edit skill");
-        dialog.setHeaderText("Update the skill name and category");
+        dialog.setHeaderText("Update the skill name, category, priority and goal");
         UiKit.styleDialog(dialog);
 
         TextField nameField = new TextField(skill.getName());
         TextField catField = new TextField(skill.getCategory());
+        ComboBox<Integer> priorityField = UiKit.levelPicker(skill.getPriority(), Skill::priorityLabel, null);
+        priorityField.setPrefHeight(34);
+        DatePicker targetField = new DatePicker(skill.getTargetDate());
+        targetField.setPromptText("No target");
+        Button clearTarget = UiKit.ghostButton("Clear");
+        clearTarget.setOnAction(e -> targetField.setValue(null));
+        HBox targetRow = new HBox(8, targetField, clearTarget);
+        targetRow.setAlignment(Pos.CENTER_LEFT);
 
-        VBox form = new VBox(16, formField("Skill name", nameField), formField("Category", catField));
+        VBox form = new VBox(16, formField("Skill name", nameField), formField("Category", catField),
+                formField("Priority", priorityField), formField("Target date", targetRow));
         form.setPrefWidth(360);
         dialog.getDialogPane().setContent(form);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
@@ -699,6 +801,8 @@ public class SkillFormController {
             try {
                 skill.setName(newName);
                 skill.setCategory(catField.getText().trim());
+                skill.setPriority(priorityField.getValue() == null ? skill.getPriority() : priorityField.getValue());
+                skill.setTargetDate(targetField.getValue());
                 skillDAO.update(skill);
                 triggerReplan();
             } catch (SQLException e) {

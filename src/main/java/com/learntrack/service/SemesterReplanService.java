@@ -31,6 +31,42 @@ public class SemesterReplanService {
     private final SyllabusDAO syllabusDAO;
     private final ExamWindowService examWindowService;
     private java.util.function.Supplier<LocalTime> currentTimeSupplier = null;
+    /** Outcome of the coverage optimizer from the most recent replan; read by the dashboard. */
+    private volatile CoveragePlan lastCoveragePlan;
+
+    public CoveragePlan getLastCoveragePlan() {
+        return lastCoveragePlan;
+    }
+
+    /**
+     * Free study slots of one day: exam-period routine inside a dated MST/EST window, weekly
+     * timetable otherwise; on the first planned day, rows that survive the replan and (for today)
+     * the time already gone are removed.
+     */
+    private List<FreeSlot> computeDayFreeSlots(int semesterId, LocalDate date, LocalDate fromDate,
+                                               String datedBatch, List<SlotMath.TimeInterval> occupiedToday)
+            throws SQLException {
+        // Inside any dated exam window: always use exam-period free slots
+        // (ExamPeriodFreeSlotService derives a default from the weekly routine when
+        // the user's exam_period_routine table is empty, so no class entries are included)
+        List<FreeSlot> freeSlots = datedBatch != null
+                ? examPeriodFreeSlotService.computeFreeSlots(semesterId, date)
+                : freeSlotService.computeFreeSlots(semesterId, date);
+
+        // Item 2: On fromDate, subtract surviving rows' occupied intervals from free slots
+        if (date.equals(fromDate) && !occupiedToday.isEmpty()) {
+            freeSlots = SlotMath.subtractIntervals(freeSlots, occupiedToday);
+        }
+
+        // On today's date, only slots at or after current time may receive new study sessions
+        if (currentTimeSupplier != null && date.equals(LocalDate.now())) {
+            LocalTime now = currentTimeSupplier.get();
+            if (now != null && now.isAfter(LocalTime.MIN)) {
+                freeSlots = SlotMath.subtractIntervals(freeSlots, List.of(new SlotMath.TimeInterval(LocalTime.MIN, now)));
+            }
+        }
+        return freeSlots;
+    }
 
     public void setCurrentTimeSupplier(java.util.function.Supplier<LocalTime> supplier) {
         this.currentTimeSupplier = supplier;
@@ -131,11 +167,16 @@ public class SemesterReplanService {
 
         // Create lightweight simulated working copies (Plan §6 & Fix Pass Item 3)
         Map<Integer, Long> orderMap = syllabusDAO.getSyllabusOrderMap(semesterId);
+        Map<Integer, Integer> importanceMap = syllabusDAO.getImportanceMap(semesterId);
         List<Topic> simTopics = new ArrayList<>();
         Map<Integer, Topic> simTopicMap = new HashMap<>();
         for (Topic t : allTopics) {
+            // The syllabus subtopic is the single source of truth for importance.
+            int importance = t.getSubtopicId() != null && importanceMap.containsKey(t.getSubtopicId())
+                    ? importanceMap.get(t.getSubtopicId())
+                    : Math.max(1, Math.min(5, t.getImportance()));
             Topic copy = new Topic(
-                    t.getTopicId(), t.getExamId(), t.getName(), t.getImportance(), t.getDifficulty(),
+                    t.getTopicId(), t.getExamId(), t.getName(), importance, t.getDifficulty(),
                     t.getHoursNeeded(), t.getRemainingHours(), t.getPhase(), t.getRevisionHoursNeeded(),
                     t.getRevisionRemainingHours(), t.getRevisionIntervalDays(), t.getLastRevised(),
                     t.getImportantFlag(), t.getSubtopicId()
@@ -168,6 +209,8 @@ public class SemesterReplanService {
             Skill copy = new Skill(
                     s.getSkillId(), s.getName(), s.getCategory(), s.getProficiency(), s.getLastPracticed()
             );
+            copy.setPriority(s.getPriority());
+            copy.setTargetDate(s.getTargetDate());
             simSkills.add(copy);
             simSkillMap.put(copy.getSkillId(), copy);
         }
@@ -245,61 +288,55 @@ public class SemesterReplanService {
 
         List<DailyLogEntry> allEntries = new ArrayList<>();
 
-        // 5. Walk each day from fromDate to horizon
+        // 5a. Free time for every day of the horizon, computed once: the coverage optimizer needs
+        // the whole picture up front, and the day walk below reuses the same slots.
+        Map<LocalDate, List<FreeSlot>> freeSlotsByDate = new HashMap<>();
+        Map<LocalDate, String> datedBatchByDate = new HashMap<>();
+        Map<LocalDate, Double> studyBudgetByDate = new LinkedHashMap<>();
+        for (LocalDate d = fromDate; !d.isAfter(horizon); d = d.plusDays(1)) {
+            // Use ExamWindowService: whole-sheet window, start = first exam date (not today)
+            String datedBatch;
+            try {
+                datedBatch = examWindowService.examTypeOnDate(semesterId, d).orElse(null);
+            } catch (SQLException ex) {
+                datedBatch = null;
+            }
+            List<FreeSlot> freeSlots = computeDayFreeSlots(semesterId, d, fromDate, datedBatch, occupiedToday);
+            double totalFree = 0.0;
+            for (FreeSlot fs : freeSlots) {
+                totalFree += fs.getDuration();
+            }
+            // NO daily study limit - always use ALL free time (+ the exam-period extra hours)
+            double budget = totalFree;
+            if (datedBatch != null) {
+                budget += "MST".equalsIgnoreCase(datedBatch) ? extraHoursMST : extraHoursEST;
+            }
+            if (d.equals(fromDate)) {
+                budget = Math.max(0.0, budget - survivingTodayHours);
+            }
+            freeSlotsByDate.put(d, freeSlots);
+            datedBatchByDate.put(d, datedBatch);
+            studyBudgetByDate.put(d, budget);
+        }
+
+        // 5b. Decide which topics fit before their exams, weighted by importance (see CoverageOptimizer).
+        CoverageOptimizer.OrderMode orderMode = "SYLLABUS".equalsIgnoreCase(
+                settingsDAO.get("planner_order_mode", "IMPORTANCE"))
+                ? CoverageOptimizer.OrderMode.SYLLABUS : CoverageOptimizer.OrderMode.IMPORTANCE;
+        double capacityFactor = settingsDAO.getDouble("planner_capacity_factor", 0.9);
+        lastCoveragePlan = new CoverageOptimizer(scoringService)
+                .optimize(simTopics, simExams, studyBudgetByDate, fromDate, capacityFactor, orderMode);
+
+        // 5c. Walk each day from fromDate to horizon
         LocalDate date = fromDate;
         while (!date.isAfter(horizon)) {
-            // Use ExamWindowService: whole-sheet window, start = first exam date (not today)
-            Optional<String> datedBatchOpt;
-            try {
-                datedBatchOpt = examWindowService.examTypeOnDate(semesterId, date);
-            } catch (SQLException ex) {
-                datedBatchOpt = Optional.empty();
-            }
-            String datedBatch = datedBatchOpt.orElse(null);
-            boolean inDatedWindow = (datedBatch != null);
-
-            List<FreeSlot> freeSlots;
-            // Inside any dated exam window: always use exam-period free slots
-            // (ExamPeriodFreeSlotService derives a default from the weekly routine when
-            // the user's exam_period_routine table is empty, so no class entries are included)
-            if (inDatedWindow) {
-                freeSlots = examPeriodFreeSlotService.computeFreeSlots(semesterId, date);
-            } else {
-                freeSlots = freeSlotService.computeFreeSlots(semesterId, date);
-            }
-
-            // Item 2: On fromDate, subtract surviving rows' occupied intervals from free slots
-            if (date.equals(fromDate) && !occupiedToday.isEmpty()) {
-                freeSlots = SlotMath.subtractIntervals(freeSlots, occupiedToday);
-            }
-
-            // On today's date, only slots at or after current time may receive new study sessions
-            if (currentTimeSupplier != null && date.equals(LocalDate.now())) {
-                LocalTime now = currentTimeSupplier.get();
-                if (now != null && now.isAfter(LocalTime.MIN)) {
-                    freeSlots = SlotMath.subtractIntervals(freeSlots, List.of(new SlotMath.TimeInterval(LocalTime.MIN, now)));
-                }
-            }
+            List<FreeSlot> freeSlots = freeSlotsByDate.get(date);
 
             double totalFreeTime = 0.0;
             for (FreeSlot fs : freeSlots) {
                 totalFreeTime += fs.getDuration();
             }
-
-            // NO daily study limit - always use ALL free time
-            double studyBudget;
-            if (inDatedWindow) {
-                // Exam period: use all free time + extra hours
-                double extra = "MST".equalsIgnoreCase(datedBatch) ? extraHoursMST : extraHoursEST;
-                studyBudget = totalFreeTime + extra;
-            } else {
-                // Normal day: use all free time
-                studyBudget = totalFreeTime;
-            }
-
-            if (date.equals(fromDate)) {
-                studyBudget = Math.max(0.0, studyBudget - survivingTodayHours);
-            }
+            double studyBudget = studyBudgetByDate.get(date);
 
             // Item 3: Rebuild queue for THIS specific date from current simulated state
             PriorityQueue<PriorityItem> queue = priorityQueueService.build(
@@ -1214,6 +1251,10 @@ public class SemesterReplanService {
         }
 
         candidates.sort((t1, t2) -> {
+            // Topics the coverage optimizer fitted before their exam always come first.
+            if (t1.isPlanned() != t2.isPlanned()) {
+                return t1.isPlanned() ? -1 : 1;
+            }
             boolean inProg1 = t1.getRemainingHours() < t1.getHoursNeeded() - 0.001;
             boolean inProg2 = t2.getRemainingHours() < t2.getHoursNeeded() - 0.001;
             if (inProg1 != inProg2) {

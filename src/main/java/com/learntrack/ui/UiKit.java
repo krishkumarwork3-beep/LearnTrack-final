@@ -41,7 +41,25 @@ public final class UiKit {
                 + "M6.8 6.8 V11.5 M9.2 6.8 V11.5", true),
         CLOSE("M4 4 L12 12 M12 4 L4 12", true),
         CHEVRON_DOWN("M4.5 6.5 L8 10 L11.5 6.5", true),
-        CHEVRON_RIGHT("M6.5 4.5 L10 8 L6.5 11.5", true);
+        CHEVRON_RIGHT("M6.5 4.5 L10 8 L6.5 11.5", true),
+        CHEVRON_LEFT("M9.5 4.5 L6 8 L9.5 11.5", true),
+        HOME("M2.5 7.5 L8 3 L13.5 7.5 M4 6.5 V13 H12 V6.5 M6.6 13 V9.6 H9.4 V13", true),
+        CALENDAR("M2.5 4 H13.5 V13.5 H2.5 Z M2.5 6.9 H13.5 M5.4 2.4 V5 M10.6 2.4 V5", true),
+        EXAM("M4 3.6 H12 V14 H4 Z M6.2 2.4 H9.8 V4.6 H6.2 Z M6 7.6 H10 M6 10.2 H9", true),
+        BOOK("M2.5 3.6 C4.6 3 6.6 3.1 8 4.3 C9.4 3.1 11.4 3 13.5 3.6 V13 C11.4 12.4 9.4 12.6 8 13.7 "
+                + "C6.6 12.6 4.6 12.4 2.5 13 Z M8 4.3 V13.7", true),
+        BOLT("M9.2 1.8 L3.8 9 H7.8 L6.8 14.2 L12.2 7 H8.2 Z", true),
+        SCAN("M4 2.5 H10 L12.5 5 V13.5 H4 Z M10 2.5 V5 H12.5 M6 8 H10.5 M6 10.6 H10.5", true),
+        GRID("M2.5 2.5 H13.5 V13.5 H2.5 Z M2.5 6.2 H13.5 M2.5 9.8 H13.5 M6.2 2.5 V13.5 M9.8 2.5 V13.5", true),
+        GEAR("M8 5.6 A2.4 2.4 0 1 0 8 10.4 A2.4 2.4 0 1 0 8 5.6 M8 1.6 V3.4 M8 12.6 V14.4 M1.6 8 H3.4 "
+                + "M12.6 8 H14.4 M3.5 3.5 L4.8 4.8 M11.2 11.2 L12.5 12.5 M3.5 12.5 L4.8 11.2 M11.2 4.8 L12.5 3.5", true),
+        MOON("M12.8 9.6 A5.2 5.2 0 1 1 6.4 3.2 A4.2 4.2 0 0 0 12.8 9.6 Z", true),
+        SUN("M8 5.4 A2.6 2.6 0 1 0 8 10.6 A2.6 2.6 0 1 0 8 5.4 M8 1.5 V2.9 M8 13.1 V14.5 M1.5 8 H2.9 "
+                + "M13.1 8 H14.5 M3.4 3.4 L4.4 4.4 M11.6 11.6 L12.6 12.6 M3.4 12.6 L4.4 11.6 M11.6 4.4 L12.6 3.4", true),
+        TARGET("M8 2 A6 6 0 1 0 8 14 A6 6 0 1 0 8 2 M8 5.2 A2.8 2.8 0 1 0 8 10.8 A2.8 2.8 0 1 0 8 5.2", true),
+        REFRESH("M13 8 A5 5 0 1 1 11.6 4.4 M11.8 1.8 V4.7 H8.9", true),
+        FLAG("M4 14 V2.6 M4 3 H12 L10.4 5.8 L12 8.6 H4", true),
+        SPARK("M8 1.8 L9.4 6.6 L14.2 8 L9.4 9.4 L8 14.2 L6.6 9.4 L1.8 8 L6.6 6.6 Z", true);
 
         private final String path;
         private final boolean outline;
@@ -210,6 +228,134 @@ public final class UiKit {
         path.getStyleClass().add(icon.outline ? "icon-outline" : "icon-glyph");
         path.setMouseTransparent(true);
         return path;
+    }
+
+    // ------------------------------------------------------------------ v2 building blocks
+
+    /**
+     * Circular progress ring with a value in the middle. Style hooks: .ring-track, .ring-arc,
+     * .ring-value, .ring-caption; add ring-ok / ring-warn / ring-danger on the returned pane.
+     */
+    public static javafx.scene.layout.StackPane progressRing(double fraction, String value, String caption,
+                                                             double radius, double stroke) {
+        javafx.scene.shape.Circle track = new javafx.scene.shape.Circle(radius);
+        track.getStyleClass().add("ring-track");
+        track.setStrokeWidth(stroke);
+        javafx.scene.shape.Arc arc = new javafx.scene.shape.Arc(0, 0, radius, radius, 90,
+                -360 * Math.max(0.0, Math.min(1.0, fraction)));
+        arc.setType(javafx.scene.shape.ArcType.OPEN);
+        arc.getStyleClass().add("ring-arc");
+        arc.setStrokeWidth(stroke);
+        javafx.scene.Group shapes = new javafx.scene.Group(track, arc);
+        // Keep the group's bounds fixed whatever the arc length, so the ring never shifts.
+        javafx.scene.shape.Circle bounds = new javafx.scene.shape.Circle(radius + stroke / 2.0);
+        bounds.setFill(javafx.scene.paint.Color.TRANSPARENT);
+        shapes.getChildren().add(0, bounds);
+
+        Label valueLabel = new Label(value);
+        valueLabel.getStyleClass().add("ring-value");
+        VBox center = new VBox(0, valueLabel);
+        center.setAlignment(Pos.CENTER);
+        if (caption != null && !caption.isBlank()) {
+            Label captionLabel = new Label(caption);
+            captionLabel.getStyleClass().add("ring-caption");
+            center.getChildren().add(captionLabel);
+        }
+        javafx.scene.layout.StackPane ring = new javafx.scene.layout.StackPane(shapes, center);
+        ring.getStyleClass().add("ring");
+        ring.setMinSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
+        return ring;
+    }
+
+    /** Dashboard tile: tinted icon, big value, label and an optional sub-line. */
+    public static HBox kpi(Icon icon, String tint, String label, String value, String sub) {
+        javafx.scene.layout.StackPane iconBox = new javafx.scene.layout.StackPane(iconNode(icon));
+        iconBox.getStyleClass().addAll("kpi-icon", "kpi-icon-" + tint);
+        Label valueLabel = new Label(value);
+        valueLabel.getStyleClass().addAll("kpi-value", "tabular");
+        Label labelLabel = new Label(label);
+        labelLabel.getStyleClass().add("kpi-label");
+        VBox text = new VBox(1, labelLabel, valueLabel);
+        if (sub != null) {
+            Label subLabel = new Label(sub);
+            subLabel.getStyleClass().add("kpi-sub");
+            text.getChildren().add(subLabel);
+        }
+        HBox box = new HBox(12, iconBox, text);
+        box.getStyleClass().add("kpi");
+        box.setAlignment(Pos.CENTER_LEFT);
+        return box;
+    }
+
+    /** Rounded label in one of the activity colours (learn, revise, pyq, skill, class, meal, sleep, exam, other). */
+    public static Label pill(String text, String kind) {
+        Label label = new Label(text);
+        label.getStyleClass().addAll("pill", "pill-" + kind);
+        label.setMinWidth(Region.USE_PREF_SIZE);
+        return label;
+    }
+
+    /** Pill showing a 1..5 importance level in its colour. */
+    public static Label importancePill(int importance) {
+        int level = com.learntrack.model.SyllabusSubtopic.clampImportance(importance);
+        Label label = new Label(com.learntrack.model.SyllabusSubtopic.importanceLabel(level));
+        label.getStyleClass().addAll("pill", "imp-" + level);
+        label.setMinWidth(Region.USE_PREF_SIZE);
+        return label;
+    }
+
+    /**
+     * Compact coloured drop-down for a 1..5 level (importance or priority). The callback runs
+     * only when the user picks a different value.
+     */
+    public static javafx.scene.control.ComboBox<Integer> levelPicker(int current,
+                                                                     java.util.function.IntFunction<String> labeler,
+                                                                     java.util.function.IntConsumer onChange) {
+        javafx.scene.control.ComboBox<Integer> box = new javafx.scene.control.ComboBox<>();
+        box.getItems().addAll(5, 4, 3, 2, 1);
+        box.getStyleClass().add("importance-picker");
+        javafx.util.Callback<javafx.scene.control.ListView<Integer>, javafx.scene.control.ListCell<Integer>> cells =
+                lv -> new javafx.scene.control.ListCell<>() {
+                    @Override
+                    protected void updateItem(Integer item, boolean empty) {
+                        super.updateItem(item, empty);
+                        setText(empty || item == null ? null : labeler.apply(item));
+                    }
+                };
+        box.setCellFactory(cells);
+        box.setButtonCell(cells.call(null));
+        int level = Math.max(1, Math.min(5, current));
+        box.setValue(level);
+        box.getStyleClass().add("imp-" + level);
+        box.valueProperty().addListener((obs, oldV, newV) -> {
+            if (newV == null) {
+                return;
+            }
+            box.getStyleClass().removeAll("imp-1", "imp-2", "imp-3", "imp-4", "imp-5");
+            box.getStyleClass().add("imp-" + newV);
+            if (oldV != null && !oldV.equals(newV) && onChange != null) {
+                onChange.accept(newV);
+            }
+        });
+        return box;
+    }
+
+    /** Activity colour family for a schedule type code (TOPIC_LEARN, CLASS, SLEEP, ...). */
+    public static String activityKind(String type) {
+        if (type == null) {
+            return "other";
+        }
+        switch (type.trim().toUpperCase()) {
+            case "TOPIC_LEARN": return "learn";
+            case "TOPIC_REVISE": return "revise";
+            case "PYQ_PRACTICE": return "pyq";
+            case "SKILL": case "SKILL_LEARN": case "SKILL_REVISE": return "skill";
+            case "CLASS": case "LAB": case "TUTORIAL": return "class";
+            case "MEAL": return "meal";
+            case "SLEEP": return "sleep";
+            case "EXAM": return "exam";
+            default: return "other";
+        }
     }
 
     // ------------------------------------------------------------------ chips / badges / stats

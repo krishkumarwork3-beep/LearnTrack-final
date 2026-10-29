@@ -14,6 +14,8 @@ public class Skill {
     private String category;
     private int proficiency;
     private LocalDate lastPracticed;
+    private int priority = 3;          // 1 someday .. 5 top focus
+    private LocalDate targetDate;      // optional goal date; null = open-ended
 
     public boolean isNeverPracticed() {
         return lastPracticed == null || !lastPracticed.isAfter(NEVER_PRACTICED);
@@ -76,4 +78,33 @@ public class Skill {
     public void setLastPracticed(LocalDate lastPracticed) {
         this.lastPracticed = lastPracticed;
     }
+
+    public int getPriority() {
+        return priority;
+    }
+
+    /** 0 (an unset column) reads as the neutral 3; everything else is clamped to 1..5. */
+    public void setPriority(int priority) {
+        this.priority = priority == 0 ? 3 : Math.max(1, Math.min(5, priority));
+    }
+
+    public LocalDate getTargetDate() {
+        return targetDate;
+    }
+
+    public void setTargetDate(LocalDate targetDate) {
+        this.targetDate = targetDate;
+    }
+
+    /** Short label for a priority level, shared by the skills screen and the planner. */
+    public static String priorityLabel(int priority) {
+        switch (Math.max(1, Math.min(5, priority))) {
+            case 1: return "Someday";
+            case 2: return "Low";
+            case 4: return "High";
+            case 5: return "Top focus";
+            default: return "Normal";
+        }
+    }
+
 }

@@ -113,7 +113,9 @@ CREATE TABLE IF NOT EXISTS skills (
     name             TEXT NOT NULL,
     category         TEXT DEFAULT '',
     proficiency      INTEGER DEFAULT 1,
-    last_practiced   TEXT DEFAULT '2000-01-01'
+    last_practiced   TEXT DEFAULT '2000-01-01',
+    priority         INTEGER NOT NULL DEFAULT 3,  -- 1 someday .. 5 top focus
+    target_date      TEXT                         -- optional goal date, NULL = open-ended
     -- no semester_id: never deleted on semester rollover, tracked forever
 );
 
@@ -182,6 +184,7 @@ CREATE TABLE IF NOT EXISTS syllabus_subtopics (
     difficulty    INTEGER NOT NULL DEFAULT 5,
     hours_to_cover REAL NOT NULL DEFAULT 1.0,
     hours_to_revise REAL NOT NULL DEFAULT 0.5,
+    importance    INTEGER NOT NULL DEFAULT 3,   -- 1 optional .. 5 must-know; drives the planner value model
     FOREIGN KEY (unit_id) REFERENCES syllabus_units(unit_id) ON DELETE CASCADE
 );
 

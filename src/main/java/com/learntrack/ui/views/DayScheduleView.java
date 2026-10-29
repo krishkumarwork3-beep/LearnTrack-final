@@ -46,6 +46,7 @@ public class DayScheduleView extends VBox {
     private Consumer<DayRow> studyRowDoubleClickHandler;
     private BiConsumer<DayRow, Boolean> onToggleDone;
     private ReadOnlyBooleanProperty busyProperty;
+    private FlowPane headerBox;
 
     public DayScheduleView() {
         super(8);
@@ -56,7 +57,7 @@ public class DayScheduleView extends VBox {
         setPadding(new Insets(4, 0, 4, 0));
 
         // 1. Metric header: stat tiles never squeeze their captions.
-        FlowPane headerBox = new FlowPane(10, 8,
+        headerBox = new FlowPane(10, 8,
                 statTile("Commitments", lblFixedHours, null),
                 statTile("Sleep", lblSleepHours, "stat-value-info"),
                 statTile("Planned study", lblPlannedStudyHours, "stat-value-info"),
@@ -141,15 +142,15 @@ public class DayScheduleView extends VBox {
             }
             return new SimpleStringProperty(s + " \u2013 " + e);
         });
-        colTime.setPrefWidth(125);
-        colTime.setMinWidth(112);
-        setupTextColumn(colTime, true, "tabular");
+        colTime.setPrefWidth(150);
+        colTime.setMinWidth(140);
+        colTime.setCellFactory(c -> new TimeCell());
 
         TableColumn<DayRow, String> colType = new TableColumn<>("Activity type");
         colType.setCellValueFactory(cell -> new SimpleStringProperty(activityLabel(cell.getValue().getType())));
         colType.setPrefWidth(115);
         colType.setMinWidth(105);
-        setupTextColumn(colType);
+        colType.setCellFactory(c -> new ActivityCell());
 
         TableColumn<DayRow, String> colLabel = new TableColumn<>("Item / commitment");
         colLabel.setCellValueFactory(new PropertyValueFactory<>("label"));
@@ -247,6 +248,59 @@ public class DayScheduleView extends VBox {
 
         getChildren().addAll(headerBox, table);
         VBox.setVgrow(table, Priority.ALWAYS);
+    }
+
+    /** Hides the stat tiles when the host page already shows the day's totals. */
+    public void setShowSummary(boolean show) {
+        headerBox.setVisible(show);
+        headerBox.setManaged(show);
+    }
+
+    /** Time slot with a thin bar in the activity colour, so the day reads at a glance. */
+    private static final class TimeCell extends TableCell<DayRow, String> {
+        private final javafx.scene.layout.Region bar = new javafx.scene.layout.Region();
+        private final Label text = new Label();
+        private final javafx.scene.layout.HBox box = new javafx.scene.layout.HBox(10, bar, text);
+
+        TimeCell() {
+            bar.getStyleClass().add("type-bar");
+            text.getStyleClass().add("tabular");
+            box.setAlignment(Pos.CENTER_LEFT);
+        }
+
+        @Override
+        protected void updateItem(String item, boolean empty) {
+            super.updateItem(item, empty);
+            setText(null);
+            DayRow row = getTableRow() != null ? getTableRow().getItem() : null;
+            if (empty || item == null || row == null) {
+                setGraphic(null);
+                return;
+            }
+            bar.getStyleClass().removeIf(s -> s.startsWith("type-bar-"));
+            bar.getStyleClass().add("type-bar-" + UiKit.activityKind(row.getType()));
+            text.setText(item);
+            text.getStyleClass().remove("text-cancelled");
+            if (row.isCancelled()) {
+                text.getStyleClass().add("text-cancelled");
+            }
+            setGraphic(box);
+        }
+    }
+
+    /** Activity type as a coloured pill. */
+    private static final class ActivityCell extends TableCell<DayRow, String> {
+        @Override
+        protected void updateItem(String item, boolean empty) {
+            super.updateItem(item, empty);
+            setText(null);
+            DayRow row = getTableRow() != null ? getTableRow().getItem() : null;
+            if (empty || item == null || item.isBlank() || row == null) {
+                setGraphic(null);
+                return;
+            }
+            setGraphic(UiKit.pill(item, UiKit.activityKind(row.getType())));
+        }
     }
 
     private VBox statTile(String caption, Label valueLabel, String valueStyleClass) {

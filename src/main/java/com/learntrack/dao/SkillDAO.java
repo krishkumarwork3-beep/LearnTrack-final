@@ -20,13 +20,15 @@ import java.util.List;
 public class SkillDAO {
 
     public int insert(Skill skill) throws SQLException {
-        String sql = "INSERT INTO skills (name, category, proficiency, last_practiced) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO skills (name, category, proficiency, last_practiced, priority, target_date) VALUES (?, ?, ?, ?, ?, ?)";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setString(1, skill.getName());
             stmt.setString(2, skill.getCategory());
             stmt.setInt(3, skill.getProficiency());
             stmt.setString(4, lastPracticedForStorage(skill));
+            stmt.setInt(5, skill.getPriority());
+            stmt.setString(6, skill.getTargetDate() == null ? null : DateUtils.formatDate(skill.getTargetDate()));
             stmt.executeUpdate();
             try (ResultSet rs = stmt.getGeneratedKeys()) {
                 if (rs.next()) {
@@ -40,14 +42,16 @@ public class SkillDAO {
     }
 
     public void update(Skill skill) throws SQLException {
-        String sql = "UPDATE skills SET name = ?, category = ?, proficiency = ?, last_practiced = ? WHERE skill_id = ?";
+        String sql = "UPDATE skills SET name = ?, category = ?, proficiency = ?, last_practiced = ?, priority = ?, target_date = ? WHERE skill_id = ?";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, skill.getName());
             stmt.setString(2, skill.getCategory());
             stmt.setInt(3, skill.getProficiency());
             stmt.setString(4, lastPracticedForStorage(skill));
-            stmt.setInt(5, skill.getSkillId());
+            stmt.setInt(5, skill.getPriority());
+            stmt.setString(6, skill.getTargetDate() == null ? null : DateUtils.formatDate(skill.getTargetDate()));
+            stmt.setInt(7, skill.getSkillId());
             stmt.executeUpdate();
         }
     }
@@ -63,7 +67,7 @@ public class SkillDAO {
     }
 
     public Skill findById(int skillId) throws SQLException {
-        String sql = "SELECT skill_id, name, category, proficiency, last_practiced FROM skills WHERE skill_id = ?";
+        String sql = "SELECT skill_id, name, category, proficiency, last_practiced, priority, target_date FROM skills WHERE skill_id = ?";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, skillId);
@@ -78,7 +82,7 @@ public class SkillDAO {
 
     public List<Skill> getAll() throws SQLException {
         List<Skill> list = new ArrayList<>();
-        String sql = "SELECT skill_id, name, category, proficiency, last_practiced FROM skills ORDER BY skill_id";
+        String sql = "SELECT skill_id, name, category, proficiency, last_practiced, priority, target_date FROM skills ORDER BY skill_id";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
@@ -105,13 +109,16 @@ public class SkillDAO {
         if (Skill.NEVER_PRACTICED.equals(lastPracticed)) {
             lastPracticed = null;
         }
-        return new Skill(
+        Skill skill = new Skill(
                 rs.getInt("skill_id"),
                 rs.getString("name"),
                 rs.getString("category"),
                 rs.getInt("proficiency"),
                 lastPracticed
         );
+        skill.setPriority(rs.getInt("priority"));
+        skill.setTargetDate(DateUtils.parseDate(rs.getString("target_date")));
+        return skill;
     }
 
     /**

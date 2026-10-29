@@ -2,6 +2,7 @@ package com.learntrack.ui.views;
 
 import com.learntrack.dao.*;
 import com.learntrack.model.*;
+import com.learntrack.service.CoveragePlan;
 import com.learntrack.service.DayScheduleService;
 import com.learntrack.service.ExamScopeService;
 import com.learntrack.service.ExamWindowService;
@@ -120,20 +121,30 @@ public class DashboardView {
     }
 
     public Node getView() {
-        VBox root = new VBox(10);
-        root.setPadding(new Insets(16, 24, 16, 24));
-
-        // Page header: fixed title, the date and exam-period note underneath.
-        dateHeader = UiKit.pageTitle("Daily schedule");
+        // ---- Hero: greeting, day summary, up-next session, date navigation and today's ring.
+        heroEyebrow = new Label();
+        heroEyebrow.getStyleClass().add("hero-eyebrow");
+        dateHeader = new Label("Today");
+        dateHeader.getStyleClass().add("hero-title");
         dateSubtitle = new Label();
-        dateSubtitle.getStyleClass().add("page-description");
-        VBox titleBox = new VBox(4, dateHeader, dateSubtitle);
+        dateSubtitle.getStyleClass().add("hero-text");
+        dateSubtitle.setWrapText(true);
 
-        // Date Navigation bar
-        HBox dateNavBox = new HBox(8);
-        dateNavBox.setAlignment(Pos.CENTER_LEFT);
+        heroNextLabel = new Label("UP NEXT");
+        heroNextLabel.getStyleClass().add("hero-next-label");
+        heroNextTitle = new Label();
+        heroNextTitle.getStyleClass().add("hero-next-title");
+        heroNextTitle.setWrapText(true);
+        heroNext = new VBox(2, heroNextLabel, heroNextTitle);
+        heroNext.getStyleClass().add("hero-next");
+        heroNext.setMaxWidth(520);
 
-        Button btnPrev = UiKit.secondaryButton("Previous");
+        VBox heroText = new VBox(4, heroEyebrow, dateHeader, dateSubtitle, heroNext);
+        VBox.setMargin(heroNext, new Insets(8, 0, 0, 0));
+        HBox.setHgrow(heroText, Priority.ALWAYS);
+
+        Button btnPrev = new Button(null, UiKit.icon(UiKit.Icon.CHEVRON_LEFT));
+        btnPrev.setTooltip(new Tooltip("Previous day"));
         btnPrev.setOnAction(e -> {
             selectedDate = selectedDate.minusDays(1);
             if (datePicker != null) datePicker.setValue(selectedDate);
@@ -148,67 +159,55 @@ public class DashboardView {
             }
         });
 
-        Button btnNext = UiKit.secondaryButton("Next");
+        Button btnNext = new Button(null, UiKit.icon(UiKit.Icon.CHEVRON_RIGHT));
+        btnNext.setTooltip(new Tooltip("Next day"));
         btnNext.setOnAction(e -> {
             selectedDate = selectedDate.plusDays(1);
             if (datePicker != null) datePicker.setValue(selectedDate);
             refreshData();
         });
 
-        Button btnToday = UiKit.secondaryButton("Today");
+        Button btnToday = new Button("Today");
         btnToday.setOnAction(e -> {
             selectedDate = LocalDate.now();
             if (datePicker != null) datePicker.setValue(selectedDate);
             refreshData();
         });
 
-        dateNavBox.getChildren().addAll(btnPrev, datePicker, btnNext, btnToday);
+        HBox dateNavBox = new HBox(2, btnPrev, datePicker, btnNext, btnToday);
+        dateNavBox.getStyleClass().add("segmented");
+        dateNavBox.setMaxWidth(Region.USE_PREF_SIZE);
 
-        // Title on the left, day navigation on the right: one row instead of two.
-        HBox headerRow = new HBox(12, titleBox, UiKit.spacer(), dateNavBox);
-        headerRow.setAlignment(Pos.CENTER_LEFT);
-        HBox.setHgrow(titleBox, Priority.ALWAYS);
+        heroRingHolder = new StackPane();
+        VBox heroRight = new VBox(14, dateNavBox, heroRingHolder);
+        heroRight.setAlignment(Pos.TOP_RIGHT);
+        heroRight.setMinWidth(Region.USE_PREF_SIZE);
 
-        // Scope warning: one collapsed line that expands on demand.
+        HBox hero = new HBox(22, heroText, heroRight);
+        hero.getStyleClass().add("hero");
+
+        // Kept for refreshData's progress text; the ring shows the same number visually.
+        todayProgressBar = new ProgressBar(0.0);
+        todayProgressLabel = new Label();
+
+        // ---- KPI row
+        kpiRow = new HBox(14);
+        kpiRow.setFillHeight(true);
+
+        // ---- Banners
         scopeWarningBanner = new VBox();
         scopeWarningBanner.setVisible(false);
         scopeWarningBanner.setManaged(false);
 
-        // Tentative exams: collapsed disclosure around the chip list.
         undatedExamsBox = new FlowPane(8, 6);
         undatedDisclosure = new VBox(6);
         undatedDisclosure.setVisible(false);
         undatedDisclosure.setManaged(false);
 
-        // Slim today-progress block: caption plus a thin bar, no card around it.
-        VBox progressBox = new VBox(2);
-        progressBox.setMinWidth(220);
-        progressBox.setMaxWidth(320);
-
-        todayProgressBar = new ProgressBar(0.0);
-        todayProgressBar.setMaxWidth(Double.MAX_VALUE);
-        todayProgressBar.setPrefHeight(6);
-
-        todayProgressLabel = new Label("Study progress: 0.0 / 0.0 h (0%)");
-        todayProgressLabel.getStyleClass().addAll("status-caption", "tabular");
-
-        progressBox.getChildren().addAll(todayProgressLabel, todayProgressBar);
-
-        if (feasibilityBarView != null) {
-            feasibilityBarView.setCompact(true);
-            feasibilityBarView.setPrefWidth(430);
-            feasibilityBarView.setMinWidth(300);
-        }
-        HBox statusRow = new HBox(12, progressBox, UiKit.spacer(),
-                feasibilityBarView == null ? UiKit.spacer() : feasibilityBarView);
-        statusRow.setAlignment(Pos.CENTER_LEFT);
-
-        // Top Header Box: every row above the timetable stays on a tight rhythm.
-        VBox topBox = new VBox(8, headerRow, statusRow, scopeWarningBanner, undatedDisclosure);
-
-        // DayScheduleView (replaces old single-source TableView)
+        // ---- Schedule card
         dayScheduleView = new DayScheduleView();
         dayScheduleView.getStyleClass().add("day-schedule");
+        dayScheduleView.setShowSummary(false);
         dayScheduleView.setOnStudyRowDoubleClicked(row -> {
             if (row.getDailyLogEntry() != null) {
                 handleDoneNotYetDialog(row.getDailyLogEntry());
@@ -221,11 +220,7 @@ public class DashboardView {
         }
         dayScheduleView.getSelectedItems().addListener((javafx.collections.ListChangeListener<DayRow>) c -> updateToolbarButtons());
 
-        // Action Toolbar: [Resize sessions] [Cancel class] [Holiday] [Cancel session]
-        HBox toolbar = new HBox(8);
-        toolbar.setAlignment(Pos.CENTER_LEFT);
-
-        btnResize = UiKit.secondaryButton("Resize sessions");
+        btnResize = UiKit.secondaryButton("Resize");
         btnResize.setTooltip(new Tooltip("Resize selected study sessions to a new duration"));
         btnResize.setOnAction(e -> handleResizeSelectedSessions());
 
@@ -241,17 +236,238 @@ public class DashboardView {
         btnCancelSession.setTooltip(new Tooltip("Cancel selected study session on " + DateUtils.formatDate(selectedDate)));
         btnCancelSession.setOnAction(e -> handleCancelOrRestoreSession());
 
-        toolbar.getChildren().addAll(btnResize, btnCancelClass, btnHoliday, btnCancelSession);
+        VBox scheduleTitle = new VBox(2, UiKit.sectionTitle("Schedule"),
+                UiKit.hint("Tick a session when it's done · double-click to log partial progress"));
+        for (Button b : List.of(btnResize, btnCancelSession, btnCancelClass, btnHoliday)) {
+            b.setMinWidth(Region.USE_PREF_SIZE);
+        }
+        scheduleTitle.setMinWidth(120);
+        HBox.setHgrow(scheduleTitle, Priority.ALWAYS);
+        HBox toolbar = new HBox(8, scheduleTitle, btnResize, btnCancelSession, btnCancelClass, btnHoliday);
+        toolbar.getStyleClass().add("toolbar-row");
 
-        Label hintLabel = UiKit.hint("Tick = done. Double-click a session to log partial progress.");
-        hintLabel.getStyleClass().add("hint-compact");
-
-        root.getChildren().addAll(topBox, toolbar, hintLabel, dayScheduleView);
+        VBox scheduleCard = new VBox(12, toolbar, dayScheduleView);
         VBox.setVgrow(dayScheduleView, Priority.ALWAYS);
+        HBox.setHgrow(scheduleCard, Priority.ALWAYS);
+
+        // ---- Plan insights column
+        insightsBox = new VBox(4);
+        VBox insightsCard = UiKit.card(insightsHeader(), insightsBox);
+        insightsCard.setSpacing(10);
+        if (feasibilityBarView != null) {
+            feasibilityBarView.setCompact(true);
+            feasibilityBarView.setMaxWidth(Double.MAX_VALUE);
+            insightsCard.getChildren().add(feasibilityBarView);
+        }
+        ScrollPane insightsScroll = new ScrollPane(insightsCard);
+        insightsScroll.setFitToWidth(true);
+        insightsScroll.getStyleClass().add("page-scroll");
+        insightsScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        insightsScroll.setMinWidth(330);
+        insightsScroll.setPrefWidth(350);
+        insightsScroll.setMaxWidth(380);
+        insightsScroll.setPadding(new Insets(0, 4, 8, 0));
+
+        HBox main = new HBox(18, scheduleCard, insightsScroll);
+        VBox.setVgrow(main, Priority.ALWAYS);
+
+        VBox root = new VBox(16, hero, kpiRow, scopeWarningBanner, undatedDisclosure, main);
+        root.setPadding(new Insets(22, 26, 18, 26));
 
         refreshData();
         updateToolbarButtons();
         return root;
+    }
+
+    private Node insightsHeader() {
+        Label title = UiKit.sectionTitle("Plan insights");
+        Label sub = UiKit.hint("What fits before each exam, weighted by topic importance and exam marks.");
+        return new VBox(2, title, sub);
+    }
+
+    private Label heroEyebrow;
+    private VBox heroNext;
+    private Label heroNextLabel;
+    private Label heroNextTitle;
+    private StackPane heroRingHolder;
+    private HBox kpiRow;
+    private VBox insightsBox;
+
+    private static String greeting() {
+        int hour = LocalTime.now().getHour();
+        if (hour < 5) return "Burning the midnight oil";
+        if (hour < 12) return "Good morning";
+        if (hour < 17) return "Good afternoon";
+        return "Good evening";
+    }
+
+    /** Hero, KPI tiles and insights from the rows of the selected day and the latest plan. */
+    private void refreshOverview(int semesterId, List<DayRow> rows, double plannedHours, double doneHours,
+                                 String examPeriod) {
+        boolean isToday = selectedDate.equals(LocalDate.now());
+        heroEyebrow.setText(selectedDate.format(DAY_TITLE).toUpperCase(java.util.Locale.ENGLISH)
+                + (examPeriod != null ? "  ·  " + examPeriod + " EXAM PERIOD" : ""));
+        dateHeader.setText(isToday ? greeting()
+                : selectedDate.format(DateTimeFormatter.ofPattern("EEEE, d MMM", java.util.Locale.ENGLISH)));
+        int sessions = 0;
+        for (DayRow r : rows) {
+            if (!r.isFixed() && !r.isCancelled()) sessions++;
+        }
+        dateSubtitle.setText(plannedHours <= 0.01
+                ? "No study planned " + (isToday ? "for the rest of today." : "on this day.")
+                : DurationFormat.format(plannedHours) + " of study across " + sessions + " session"
+                + (sessions == 1 ? "" : "s") + " · " + DurationFormat.format(doneHours) + " done"
+                + (examPeriod != null ? " · no classes" : ""));
+
+        // Up next: the first unfinished study block that has not ended yet (or the first of the day).
+        DayRow next = null;
+        LocalTime now = LocalTime.now();
+        for (DayRow r : rows) {
+            if (r.isFixed() || r.isCancelled()) continue;
+            DailyLogEntry log = r.getDailyLogEntry();
+            if (log != null && "DONE".equalsIgnoreCase(log.getStatus())) continue;
+            if (isToday && r.getEnd() != null && r.getEnd().isBefore(now) && !r.getEnd().equals(LocalTime.MIDNIGHT)) continue;
+            next = r;
+            break;
+        }
+        if (next != null) {
+            boolean running = isToday && next.getStart() != null && !next.getStart().isAfter(now);
+            heroNextLabel.setText(running ? "NOW" : isToday ? "UP NEXT" : "FIRST SESSION");
+            heroNextTitle.setText(next.getStart().format(DateTimeFormatter.ofPattern("HH:mm")) + "  ·  "
+                    + next.getLabel() + "  ·  " + DurationFormat.format(next.getDurationHours()));
+            heroNext.setVisible(true);
+            heroNext.setManaged(true);
+        } else {
+            heroNext.setVisible(false);
+            heroNext.setManaged(false);
+        }
+
+        double pct = plannedHours > 0 ? doneHours / plannedHours : 0.0;
+        heroRingHolder.getChildren().setAll(UiKit.progressRing(pct,
+                Math.round(pct * 100) + "%", "done", 40, 8));
+
+        // KPI tiles
+        kpiRow.getChildren().clear();
+        HBox studyTile = UiKit.kpi(UiKit.Icon.CLOCK, "learn", isToday ? "Study today" : "Study this day",
+                DurationFormat.format(doneHours) + " / " + DurationFormat.format(plannedHours),
+                sessions + " session" + (sessions == 1 ? "" : "s") + " planned");
+
+        Exam nextExam = null;
+        try {
+            for (Exam e : examDAO.findBySemester(semesterId)) {
+                if (e.getExamDate() == null || e.getExamDate().isBefore(LocalDate.now())) continue;
+                if (nextExam == null || e.getExamDate().isBefore(nextExam.getExamDate())) nextExam = e;
+            }
+        } catch (SQLException ignored) {
+        }
+        HBox examTile;
+        if (nextExam != null) {
+            long days = java.time.temporal.ChronoUnit.DAYS.between(LocalDate.now(), nextExam.getExamDate());
+            examTile = UiKit.kpi(UiKit.Icon.FLAG, "exam", "Next exam",
+                    days == 0 ? "Today" : days == 1 ? "Tomorrow" : "In " + days + " days",
+                    examLabel(nextExam) + " · " + nextExam.getExamDate().format(DateTimeFormatter.ofPattern("d MMM")));
+        } else {
+            examTile = UiKit.kpi(UiKit.Icon.FLAG, "exam", "Next exam", "None dated", "Add dates in Exams");
+        }
+
+        CoveragePlan plan = replanService != null ? replanService.getLastCoveragePlan() : null;
+        HBox coverageTile;
+        HBox riskTile;
+        if (plan != null && !plan.getExams().isEmpty()) {
+            coverageTile = UiKit.kpi(UiKit.Icon.TARGET, "revise", "Syllabus coverage",
+                    Math.round(plan.overallCoverage() * 100) + "%", "learned or planned before exams");
+            int risk = plan.atRiskCount();
+            int critical = plan.criticalAtRiskCount();
+            riskTile = UiKit.kpi(UiKit.Icon.SPARK, "skill", "Topics that don't fit",
+                    String.valueOf(risk),
+                    risk == 0 ? "everything fits" : critical + " rated High or Must-know");
+        } else {
+            coverageTile = UiKit.kpi(UiKit.Icon.TARGET, "revise", "Syllabus coverage", "–", "set an exam scope first");
+            riskTile = UiKit.kpi(UiKit.Icon.SPARK, "skill", "Topics that don't fit", "–", "no plan yet");
+        }
+        for (HBox tile : List.of(studyTile, examTile, coverageTile, riskTile)) {
+            HBox.setHgrow(tile, Priority.ALWAYS);
+            tile.setMaxWidth(Double.MAX_VALUE);
+            tile.setPrefWidth(0);
+            kpiRow.getChildren().add(tile);
+        }
+
+        refreshInsights(plan);
+    }
+
+    private void refreshInsights(CoveragePlan plan) {
+        insightsBox.getChildren().clear();
+        if (plan == null || plan.getExams().isEmpty()) {
+            insightsBox.getChildren().add(UiKit.emptyState("No exams to plan yet",
+                    "Give an exam a syllabus scope in Exams and the planner will show what fits here."));
+            return;
+        }
+        List<CoveragePlan.ExamCoverage> exams = new ArrayList<>(plan.getExams());
+        exams.removeIf(c -> c.getTotalTopics() == 0);
+        if (exams.isEmpty()) {
+            insightsBox.getChildren().add(UiKit.emptyState("No syllabus in scope",
+                    "Open Exams and choose the subtopics each exam covers."));
+            return;
+        }
+        for (CoveragePlan.ExamCoverage c : exams) {
+            Label name = new Label(examLabel(c.getExam()));
+            name.getStyleClass().add("insight-name");
+            name.setMaxWidth(Double.MAX_VALUE);
+            long days = java.time.temporal.ChronoUnit.DAYS.between(LocalDate.now(), c.getDeadline());
+            String when = c.getExam().getExamDate() == null ? "date TBD"
+                    : days <= 0 ? "today" : days == 1 ? "tomorrow" : "in " + days + " days";
+            Label meta = new Label(when + " · " + (c.getLearnedTopics() + c.getPlannedTopics()) + "/" + c.getTotalTopics()
+                    + " topics · " + DurationFormat.format(c.getPlannedHours()) + " planned");
+            meta.getStyleClass().add("insight-meta");
+            ProgressBar bar = new ProgressBar(c.coverage());
+            bar.setMaxWidth(Double.MAX_VALUE);
+            bar.setPrefHeight(7);
+            double cov = c.coverage();
+            bar.getStyleClass().add(cov >= 0.999 ? "progress-bar-success" : cov >= 0.75 ? "progress-bar-warning" : "progress-bar-danger");
+            Label pct = new Label(Math.round(cov * 100) + "%");
+            pct.getStyleClass().addAll("insight-pct", "tabular");
+            VBox text = new VBox(3, name, meta, bar);
+            HBox.setHgrow(text, Priority.ALWAYS);
+            HBox row = new HBox(10, text, pct);
+            row.getStyleClass().add("insight-row");
+            insightsBox.getChildren().add(row);
+        }
+
+        // Topics that do not fit, most important first, across all exams.
+        List<String[]> risks = new ArrayList<>();
+        List<Integer> levels = new ArrayList<>();
+        for (CoveragePlan.ExamCoverage c : exams) {
+            for (CoveragePlan.AtRiskTopic t : c.getAtRisk()) {
+                risks.add(new String[]{t.name, examLabel(c.getExam()), DurationFormat.format(t.hours)});
+                levels.add(t.importance);
+            }
+        }
+        if (!risks.isEmpty()) {
+            Integer[] order = new Integer[risks.size()];
+            for (int i = 0; i < order.length; i++) order[i] = i;
+            java.util.Arrays.sort(order, (a, b) -> Integer.compare(levels.get(b), levels.get(a)));
+            Label title = UiKit.sectionTitle("Doesn't fit yet");
+            VBox.setMargin(title, new Insets(10, 0, 0, 0));
+            insightsBox.getChildren().addAll(title, UiKit.hint(
+                    "Studied only if time frees up. Raise free time, trim scope, or lower other topics' importance."));
+            int shown = 0;
+            for (Integer i : order) {
+                if (shown++ >= 8) break;
+                Label topic = new Label(risks.get(i)[0]);
+                topic.getStyleClass().add("insight-name");
+                topic.setWrapText(true);
+                Label where = new Label(risks.get(i)[1] + " · " + risks.get(i)[2]);
+                where.getStyleClass().add("insight-meta");
+                VBox text = new VBox(1, topic, where);
+                HBox.setHgrow(text, Priority.ALWAYS);
+                HBox item = new HBox(8, text, UiKit.importancePill(levels.get(i)));
+                item.getStyleClass().add("risk-item");
+                insightsBox.getChildren().add(item);
+            }
+            if (risks.size() > 8) {
+                insightsBox.getChildren().add(UiKit.hint("+ " + (risks.size() - 8) + " more"));
+            }
+        }
     }
 
     /**
@@ -1474,21 +1690,18 @@ public class DashboardView {
             Semester active = semesterDAO.getActiveSemester();
 
             // Label exam-period days: the weekly timetable is not followed on them.
-            String headerText = dateStr;
+            String examPeriod = null;
             if (active != null && active.getSemesterId() != null) {
                 try {
                     ExamWindowService examWindowService = new ExamWindowService();
-                    String examType = examWindowService.examTypeOnDate(active.getSemesterId(), selectedDate).orElse(null);
-                    if (examType != null) {
-                        headerText += ": " + examType + " exam period, no classes";
-                    }
+                    examPeriod = examWindowService.examTypeOnDate(active.getSemesterId(), selectedDate).orElse(null);
                 } catch (SQLException ignored) {
                 }
             }
             if (dateSubtitle != null) {
-                dateSubtitle.setText(headerText);
+                dateSubtitle.setText(dateStr);
             }
-            
+
             if (active != null && active.getSemesterId() != null) {
                 List<DayRow> rows = dayScheduleService.build(active.getSemesterId(), selectedDate, true);
                 if (dayScheduleView != null) {
@@ -1515,6 +1728,9 @@ public class DashboardView {
                     String prefix = selectedDate.equals(LocalDate.now()) ? "Today's Study Progress: " : "Study Progress (" + DateUtils.formatDate(selectedDate) + "): ";
                     todayProgressLabel.setText(String.format("%s%s / %s (%.0f%% completed)",
                             prefix, DurationFormat.format(doneHours), DurationFormat.format(plannedHours), pct * 100.0));
+                }
+                if (kpiRow != null) {
+                    refreshOverview(active.getSemesterId(), rows, plannedHours, doneHours, examPeriod);
                 }
 
                 // Check for exams without syllabus scope

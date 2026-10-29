@@ -249,7 +249,7 @@ public class ExamScopeService {
 
                             Topic topic = new Topic(
                                 null, examId, subtopic.getName(),
-                                4, 1, // difficulty = neutral 1 (DifficultyMapper removed from planning)
+                                subtopic.getImportance(), 1, // difficulty = neutral 1 (DifficultyMapper removed from planning)
                                 coverHrs, coverHrs, "LEARNING",
                                 reviseHrs, reviseHrs, 7, null, 1, subtopicId
                             );

@@ -23,7 +23,22 @@ public class Topic {
     private Integer subtopicId; // links to syllabus subtopic; NULL for manual topics
     private long syllabusOrder = Long.MAX_VALUE; // transient position in syllabus: unitPosition * 100000 + subtopicPosition
 
+    /**
+     * Transient planner flag: false when the coverage optimizer decided this topic does not fit
+     * before its exam. Such topics are still studied when spare time appears, but they never
+     * block planned topics, PYQ practice, or each other's syllabus order.
+     */
+    private boolean planned = true;
+
     public Topic() {
+    }
+
+    public boolean isPlanned() {
+        return planned;
+    }
+
+    public void setPlanned(boolean planned) {
+        this.planned = planned;
     }
 
     public Topic(Integer topicId, int examId, String name, int importance,
