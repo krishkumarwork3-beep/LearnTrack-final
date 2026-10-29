@@ -402,3 +402,7 @@
 .dialog-pane .label {
     -fx-text-fill: -lt-text-body;
 }
+
+.bar-planned {
+    -fx-background-color: derive(-lt-primary, -45%);
+}

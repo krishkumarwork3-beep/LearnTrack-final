@@ -41,6 +41,17 @@ public class CoveragePlan {
         return total <= 0 ? 1.0 : Math.min(1.0, covered / total);
     }
 
+    /** Value-weighted share of all open exams that is already learned (0..1). */
+    public double overallLearned() {
+        double total = 0.0;
+        double learned = 0.0;
+        for (ExamCoverage e : exams) {
+            total += e.totalValue;
+            learned += e.securedValue;
+        }
+        return total <= 0 ? 0.0 : Math.min(1.0, learned / total);
+    }
+
     public int atRiskCount() {
         int n = 0;
         for (ExamCoverage e : exams) n += e.atRisk.size();

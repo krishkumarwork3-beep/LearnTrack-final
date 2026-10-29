@@ -10,6 +10,7 @@ import com.learntrack.service.SemesterReplanService;
 import com.learntrack.service.SemesterService;
 import com.learntrack.service.SkillProgressService;
 import com.learntrack.service.TimetableEditService;
+import com.learntrack.ui.ReplanRunner;
 import com.learntrack.ui.UiKit;
 import com.learntrack.ui.charts.FeasibilityBarView;
 import com.learntrack.util.DateUtils;
@@ -76,6 +77,8 @@ public class DashboardView {
     private Button btnCancelSession;
     private final SkillSubtopicDAO skillSubtopicDAO;
     private final SkillProgressService skillProgressService;
+    private final com.learntrack.service.StudyProgressService studyProgressService =
+            new com.learntrack.service.StudyProgressService(new TopicDAO(), new SyllabusDAO());
 
     public DashboardView(DailyLogDAO dailyLogDAO, TopicDAO topicDAO, SkillDAO skillDAO,
                          ExamDAO examDAO, SemesterDAO semesterDAO, TimetableDAO timetableDAO,
@@ -250,39 +253,15 @@ public class DashboardView {
         VBox.setVgrow(dayScheduleView, Priority.ALWAYS);
         HBox.setHgrow(scheduleCard, Priority.ALWAYS);
 
-        // ---- Plan insights column
-        insightsBox = new VBox(4);
-        VBox insightsCard = UiKit.card(insightsHeader(), insightsBox);
-        insightsCard.setSpacing(10);
-        if (feasibilityBarView != null) {
-            feasibilityBarView.setCompact(true);
-            feasibilityBarView.setMaxWidth(Double.MAX_VALUE);
-            insightsCard.getChildren().add(feasibilityBarView);
-        }
-        ScrollPane insightsScroll = new ScrollPane(insightsCard);
-        insightsScroll.setFitToWidth(true);
-        insightsScroll.getStyleClass().add("page-scroll");
-        insightsScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        insightsScroll.setMinWidth(330);
-        insightsScroll.setPrefWidth(350);
-        insightsScroll.setMaxWidth(380);
-        insightsScroll.setPadding(new Insets(0, 4, 8, 0));
+        // Coverage and workload live on their own page; Today is just the day.
+        VBox.setVgrow(scheduleCard, Priority.ALWAYS);
 
-        HBox main = new HBox(18, scheduleCard, insightsScroll);
-        VBox.setVgrow(main, Priority.ALWAYS);
-
-        VBox root = new VBox(16, hero, kpiRow, scopeWarningBanner, undatedDisclosure, main);
+        VBox root = new VBox(16, hero, kpiRow, scopeWarningBanner, undatedDisclosure, scheduleCard);
         root.setPadding(new Insets(22, 26, 18, 26));
 
         refreshData();
         updateToolbarButtons();
         return root;
-    }
-
-    private Node insightsHeader() {
-        Label title = UiKit.sectionTitle("Plan insights");
-        Label sub = UiKit.hint("What fits before each exam, weighted by topic importance and exam marks.");
-        return new VBox(2, title, sub);
     }
 
     private Label heroEyebrow;
@@ -291,7 +270,6 @@ public class DashboardView {
     private Label heroNextTitle;
     private StackPane heroRingHolder;
     private HBox kpiRow;
-    private VBox insightsBox;
 
     private static String greeting() {
         int hour = LocalTime.now().getHour();
@@ -370,103 +348,27 @@ public class DashboardView {
             examTile = UiKit.kpi(UiKit.Icon.FLAG, "exam", "Next exam", "None dated", "Add dates in Exams");
         }
 
-        CoveragePlan plan = replanService != null ? replanService.getLastCoveragePlan() : null;
-        HBox coverageTile;
-        HBox riskTile;
-        if (plan != null && !plan.getExams().isEmpty()) {
-            coverageTile = UiKit.kpi(UiKit.Icon.TARGET, "revise", "Syllabus coverage",
-                    Math.round(plan.overallCoverage() * 100) + "%", "learned or planned before exams");
-            int risk = plan.atRiskCount();
-            int critical = plan.criticalAtRiskCount();
-            riskTile = UiKit.kpi(UiKit.Icon.SPARK, "skill", "Topics that don't fit",
-                    String.valueOf(risk),
-                    risk == 0 ? "everything fits" : critical + " rated High or Must-know");
-        } else {
-            coverageTile = UiKit.kpi(UiKit.Icon.TARGET, "revise", "Syllabus coverage", "–", "set an exam scope first");
-            riskTile = UiKit.kpi(UiKit.Icon.SPARK, "skill", "Topics that don't fit", "–", "no plan yet");
+        // What the day is made of: new syllabus first, then skills and revision.
+        int learnTopics = 0;
+        double learnHours = 0, otherHours = 0;
+        for (DayRow r : rows) {
+            if (r.isFixed() || r.isCancelled()) continue;
+            if ("TOPIC_LEARN".equalsIgnoreCase(r.getType())) {
+                learnTopics++;
+                learnHours += r.getDurationHours();
+            } else {
+                otherHours += r.getDurationHours();
+            }
         }
-        for (HBox tile : List.of(studyTile, examTile, coverageTile, riskTile)) {
+        HBox learnTile = UiKit.kpi(UiKit.Icon.BOOK, "revise", "New syllabus",
+                DurationFormat.format(learnHours), learnTopics + " topic session" + (learnTopics == 1 ? "" : "s"));
+        HBox otherTile = UiKit.kpi(UiKit.Icon.BOLT, "skill", "Skills & revision",
+                DurationFormat.format(otherHours), "after the new syllabus");
+        for (HBox tile : List.of(studyTile, examTile, learnTile, otherTile)) {
             HBox.setHgrow(tile, Priority.ALWAYS);
             tile.setMaxWidth(Double.MAX_VALUE);
             tile.setPrefWidth(0);
             kpiRow.getChildren().add(tile);
-        }
-
-        refreshInsights(plan);
-    }
-
-    private void refreshInsights(CoveragePlan plan) {
-        insightsBox.getChildren().clear();
-        if (plan == null || plan.getExams().isEmpty()) {
-            insightsBox.getChildren().add(UiKit.emptyState("No exams to plan yet",
-                    "Give an exam a syllabus scope in Exams and the planner will show what fits here."));
-            return;
-        }
-        List<CoveragePlan.ExamCoverage> exams = new ArrayList<>(plan.getExams());
-        exams.removeIf(c -> c.getTotalTopics() == 0);
-        if (exams.isEmpty()) {
-            insightsBox.getChildren().add(UiKit.emptyState("No syllabus in scope",
-                    "Open Exams and choose the subtopics each exam covers."));
-            return;
-        }
-        for (CoveragePlan.ExamCoverage c : exams) {
-            Label name = new Label(examLabel(c.getExam()));
-            name.getStyleClass().add("insight-name");
-            name.setMaxWidth(Double.MAX_VALUE);
-            long days = java.time.temporal.ChronoUnit.DAYS.between(LocalDate.now(), c.getDeadline());
-            String when = c.getExam().getExamDate() == null ? "date TBD"
-                    : days <= 0 ? "today" : days == 1 ? "tomorrow" : "in " + days + " days";
-            Label meta = new Label(when + " · " + (c.getLearnedTopics() + c.getPlannedTopics()) + "/" + c.getTotalTopics()
-                    + " topics · " + DurationFormat.format(c.getPlannedHours()) + " planned");
-            meta.getStyleClass().add("insight-meta");
-            ProgressBar bar = new ProgressBar(c.coverage());
-            bar.setMaxWidth(Double.MAX_VALUE);
-            bar.setPrefHeight(7);
-            double cov = c.coverage();
-            bar.getStyleClass().add(cov >= 0.999 ? "progress-bar-success" : cov >= 0.75 ? "progress-bar-warning" : "progress-bar-danger");
-            Label pct = new Label(Math.round(cov * 100) + "%");
-            pct.getStyleClass().addAll("insight-pct", "tabular");
-            VBox text = new VBox(3, name, meta, bar);
-            HBox.setHgrow(text, Priority.ALWAYS);
-            HBox row = new HBox(10, text, pct);
-            row.getStyleClass().add("insight-row");
-            insightsBox.getChildren().add(row);
-        }
-
-        // Topics that do not fit, most important first, across all exams.
-        List<String[]> risks = new ArrayList<>();
-        List<Integer> levels = new ArrayList<>();
-        for (CoveragePlan.ExamCoverage c : exams) {
-            for (CoveragePlan.AtRiskTopic t : c.getAtRisk()) {
-                risks.add(new String[]{t.name, examLabel(c.getExam()), DurationFormat.format(t.hours)});
-                levels.add(t.importance);
-            }
-        }
-        if (!risks.isEmpty()) {
-            Integer[] order = new Integer[risks.size()];
-            for (int i = 0; i < order.length; i++) order[i] = i;
-            java.util.Arrays.sort(order, (a, b) -> Integer.compare(levels.get(b), levels.get(a)));
-            Label title = UiKit.sectionTitle("Doesn't fit yet");
-            VBox.setMargin(title, new Insets(10, 0, 0, 0));
-            insightsBox.getChildren().addAll(title, UiKit.hint(
-                    "Studied only if time frees up. Raise free time, trim scope, or lower other topics' importance."));
-            int shown = 0;
-            for (Integer i : order) {
-                if (shown++ >= 8) break;
-                Label topic = new Label(risks.get(i)[0]);
-                topic.getStyleClass().add("insight-name");
-                topic.setWrapText(true);
-                Label where = new Label(risks.get(i)[1] + " · " + risks.get(i)[2]);
-                where.getStyleClass().add("insight-meta");
-                VBox text = new VBox(1, topic, where);
-                HBox.setHgrow(text, Priority.ALWAYS);
-                HBox item = new HBox(8, text, UiKit.importancePill(levels.get(i)));
-                item.getStyleClass().add("risk-item");
-                insightsBox.getChildren().add(item);
-            }
-            if (risks.size() > 8) {
-                insightsBox.getChildren().add(UiKit.hint("+ " + (risks.size() - 8) + " more"));
-            }
         }
     }
 
@@ -617,11 +519,7 @@ public class DashboardView {
 
             if (result.isPresent() && result.get() == btnYes) {
                 try {
-                    Topic topic = topicDAO.findById(log.getItemId());
-                    if (topic != null) {
-                        topic.markLearningDone(sessionDate);
-                        topicDAO.update(topic);
-                    }
+                    studyProgressService.finishTopic(log.getItemId(), sessionDate);   // also ticks the syllabus
                     dailyLogDAO.updateStatus(log.getLogId(), "DONE");
                     replan();
                 } catch (SQLException e) {
@@ -871,102 +769,125 @@ public class DashboardView {
         }
     }
 
+    /**
+     * Tick / untick a session. The tick shows at once; the database update and the replan run in
+     * the background (several quick ticks share one replan), so the schedule never freezes.
+     */
     private void handleToggleDone(DayRow row, boolean isDone) {
         if (row == null || row.getDailyLogEntry() == null) return;
         DailyLogEntry log = row.getDailyLogEntry();
         LocalDate sessionDate = log.getLogDate() != null ? log.getLogDate() : selectedDate;
 
-        if (isDone) {
-            if (!canLogProgress(sessionDate, LocalDate.now())) {
-                showAlert(Alert.AlertType.INFORMATION, "Session In Future",
-                        "This session is planned for " + sessionDate + " which is in the future.\n" +
-                        "You can only log progress on today's or past sessions.");
+        if (isDone && !canLogProgress(sessionDate, LocalDate.now())) {
+            showAlert(Alert.AlertType.INFORMATION, "Session In Future",
+                    "This session is planned for " + sessionDate + " which is in the future.\n" +
+                    "You can only log progress on today's or past sessions.");
+            refreshData();
+            return;
+        }
+
+        String previousStatus = log.getStatus();
+        String newStatus = isDone ? "DONE" : (sessionDate.isAfter(LocalDate.now()) ? "PLANNED" : "PENDING");
+        log.setStatus(newStatus);                       // optimistic: the row restyles immediately
+        dayScheduleView.getTable().refresh();
+
+        ReplanRunner.Work work = () -> {
+            if (isDone) {
+                applyDone(log, sessionDate);
+            } else {
+                applyUndo(log);
+            }
+            dailyLogDAO.updateStatus(log.getLogId(), newStatus);
+        };
+
+        try {
+            Semester active = semesterDAO.getActiveSemester();
+            if (active == null || active.getSemesterId() == null) return;
+            Runnable after = () -> {
                 refreshData();
-                return;
+                if (onDataChanged != null) onDataChanged.run();
+            };
+            if (replanRunner != null) {
+                replanRunner.runAfter(work, active.getSemesterId(), after, err -> {
+                    log.setStatus(previousStatus);  // put the row back as it was
+                    refreshData();
+                    UiKit.error(dashboardWindow(), "The session could not be updated.", err);
+                });
+            } else {
+                work.run();
+                replanService.regenerateSemesterPlan(active.getSemesterId(), LocalDate.now());
+                after.run();
             }
-            try {
-                String itemType = log.getItemType();
-                if ("TOPIC_LEARN".equalsIgnoreCase(itemType)) {
-                    Topic topic = topicDAO.findById(log.getItemId());
-                    if (topic != null) {
-                        topic.markLearningDone(sessionDate);
-                        topicDAO.update(topic);
-                    }
-                } else if ("TOPIC_REVISE".equalsIgnoreCase(itemType)) {
-                    Topic topic = topicDAO.findById(log.getItemId());
-                    if (topic != null) {
-                        topic.markRevisionDone(sessionDate);
-                        topicDAO.update(topic);
-                    }
-                } else if ("SKILL_LEARN".equalsIgnoreCase(itemType)) {
-                    skillProgressService.logLearningProgress(log.getItemId(), log.getDurationHours(), sessionDate);
-                } else if ("SKILL_REVISE".equalsIgnoreCase(itemType)) {
-                    skillProgressService.logRevisionProgress(log.getItemId(), log.getDurationHours(), sessionDate);
-                } else if ("PYQ_PRACTICE".equalsIgnoreCase(itemType)) {
-                    Exam exam = examDAO.findById(log.getItemId());
-                    if (exam != null) {
-                        exam.setPyqRemainingHours(0.0);
-                        examDAO.update(exam);
-                    }
-                } else if ("SKILL".equalsIgnoreCase(itemType)) {
-                    skillDAO.updateLastPracticed(log.getItemId(), sessionDate);
-                }
-                dailyLogDAO.updateStatus(log.getLogId(), "DONE");
-                replan();
-            } catch (SQLException e) {
-                showAlert(Alert.AlertType.ERROR, "Error", e.getMessage());
+        } catch (Exception e) {
+            log.setStatus(previousStatus);
+            refreshData();
+            showAlert(Alert.AlertType.ERROR, "Error", e.getMessage());
+        }
+    }
+
+    /** Progress for a ticked session (runs off the UI thread). */
+    private void applyDone(DailyLogEntry log, LocalDate sessionDate) throws SQLException {
+        String itemType = log.getItemType();
+        if ("TOPIC_LEARN".equalsIgnoreCase(itemType)) {
+            studyProgressService.completeLearnSession(log.getItemId(), log.getDurationHours(), sessionDate);
+        } else if ("TOPIC_REVISE".equalsIgnoreCase(itemType)) {
+            Topic topic = topicDAO.findById(log.getItemId());
+            if (topic != null) {
+                topic.markRevisionDone(sessionDate);
+                topicDAO.update(topic);
             }
-        } else {
-            // Revert session back to PENDING or PLANNED and reverse topic completion
-            try {
-                String newStatus = sessionDate.isAfter(LocalDate.now()) ? "PLANNED" : "PENDING";
-                dailyLogDAO.updateStatus(log.getLogId(), newStatus);
-                String itemType = log.getItemType();
-                if ("TOPIC_LEARN".equalsIgnoreCase(itemType)) {
-                    Topic topic = topicDAO.findById(log.getItemId());
-                    if (topic != null) {
-                        topic.setPhase("LEARNING");
-                        double restored = Math.min(topic.getHoursNeeded(), topic.getRemainingHours() + log.getDurationHours());
-                        topic.setRemainingHours(restored);
-                        topicDAO.update(topic);
-                    }
-                } else if ("TOPIC_REVISE".equalsIgnoreCase(itemType)) {
-                    Topic topic = topicDAO.findById(log.getItemId());
-                    if (topic != null) {
-                        double restored = Math.min(topic.getRevisionHoursNeeded(), topic.getRevisionRemainingHours() + log.getDurationHours());
-                        topic.setRevisionRemainingHours(restored);
-                        topicDAO.update(topic);
-                    }
-                } else if ("SKILL_LEARN".equalsIgnoreCase(itemType)) {
-                    SkillSubtopic st = skillSubtopicDAO.findById(log.getItemId());
-                    if (st != null) {
-                        if (st.isLearned()) {
-                            skillSubtopicDAO.unmarkLearned(st.getSubtopicId());
-                        }
-                        double restored = Math.min(st.getLearnHours(), st.getLearnRemainingHours() + log.getDurationHours());
-                        st.setLearnRemainingHours(restored);
-                        skillSubtopicDAO.update(st);
-                    }
-                } else if ("SKILL_REVISE".equalsIgnoreCase(itemType)) {
-                    SkillSubtopic st = skillSubtopicDAO.findById(log.getItemId());
-                    if (st != null) {
-                        if (st.isRevised()) {
-                            skillSubtopicDAO.unmarkRevised(st.getSubtopicId());
-                        }
-                        double restored = Math.min(st.getReviseHours(), st.getReviseRemainingHours() + log.getDurationHours());
-                        st.setReviseRemainingHours(restored);
-                        skillSubtopicDAO.update(st);
-                    }
-                } else if ("PYQ_PRACTICE".equalsIgnoreCase(itemType)) {
-                    Exam exam = examDAO.findById(log.getItemId());
-                    if (exam != null) {
-                        exam.setPyqRemainingHours(Math.max(exam.getPyqRemainingHours(), log.getDurationHours()));
-                        examDAO.update(exam);
-                    }
+        } else if ("SKILL_LEARN".equalsIgnoreCase(itemType)) {
+            skillProgressService.logLearningProgress(log.getItemId(), log.getDurationHours(), sessionDate);
+        } else if ("SKILL_REVISE".equalsIgnoreCase(itemType)) {
+            skillProgressService.logRevisionProgress(log.getItemId(), log.getDurationHours(), sessionDate);
+        } else if ("PYQ_PRACTICE".equalsIgnoreCase(itemType)) {
+            Exam exam = examDAO.findById(log.getItemId());
+            if (exam != null) {
+                exam.setPyqRemainingHours(Math.max(0.0, exam.getPyqRemainingHours() - log.getDurationHours()));
+                examDAO.update(exam);
+            }
+        } else if ("SKILL".equalsIgnoreCase(itemType)) {
+            skillDAO.updateLastPracticed(log.getItemId(), sessionDate);
+        }
+    }
+
+    /** Reverse the progress of an unticked session (runs off the UI thread). */
+    private void applyUndo(DailyLogEntry log) throws SQLException {
+        String itemType = log.getItemType();
+        if ("TOPIC_LEARN".equalsIgnoreCase(itemType)) {
+            studyProgressService.undoLearnSession(log.getItemId(), log.getDurationHours());
+        } else if ("TOPIC_REVISE".equalsIgnoreCase(itemType)) {
+            Topic topic = topicDAO.findById(log.getItemId());
+            if (topic != null) {
+                double restored = Math.min(topic.getRevisionHoursNeeded(), topic.getRevisionRemainingHours() + log.getDurationHours());
+                topic.setRevisionRemainingHours(restored);
+                topicDAO.update(topic);
+            }
+        } else if ("SKILL_LEARN".equalsIgnoreCase(itemType)) {
+            SkillSubtopic st = skillSubtopicDAO.findById(log.getItemId());
+            if (st != null) {
+                if (st.isLearned()) {
+                    skillSubtopicDAO.unmarkLearned(st.getSubtopicId());
                 }
-                replan();
-            } catch (SQLException e) {
-                showAlert(Alert.AlertType.ERROR, "Error", e.getMessage());
+                double restored = Math.min(st.getLearnHours(), st.getLearnRemainingHours() + log.getDurationHours());
+                st.setLearnRemainingHours(restored);
+                skillSubtopicDAO.update(st);
+            }
+        } else if ("SKILL_REVISE".equalsIgnoreCase(itemType)) {
+            SkillSubtopic st = skillSubtopicDAO.findById(log.getItemId());
+            if (st != null) {
+                if (st.isRevised()) {
+                    skillSubtopicDAO.unmarkRevised(st.getSubtopicId());
+                }
+                double restored = Math.min(st.getReviseHours(), st.getReviseRemainingHours() + log.getDurationHours());
+                st.setReviseRemainingHours(restored);
+                skillSubtopicDAO.update(st);
+            }
+        } else if ("PYQ_PRACTICE".equalsIgnoreCase(itemType)) {
+            Exam exam = examDAO.findById(log.getItemId());
+            if (exam != null) {
+                exam.setPyqRemainingHours(exam.getPyqRemainingHours() + log.getDurationHours());
+                examDAO.update(exam);
             }
         }
     }
@@ -1585,6 +1506,7 @@ public class DashboardView {
                 if (res.isPresent() && res.get() == btnRestore) {
                     for (DayRow r : cancellable) {
                         semesterService.recordRemoveCancellation(selectedDate, r.getTimetableEntryId());
+                        dateOverrideDAO.deleteByDateAndEntry(selectedDate, r.getTimetableEntryId(), "ADD");   // drop a "keep free" block
                     }
                     if (replanRunner != null) {
                         replanRunner.run(semId, LocalDate.now(), () -> {
@@ -1633,16 +1555,24 @@ public class DashboardView {
                 sb.append("Your normal timetable is unchanged on all other dates.");
                 msg = sb.toString();
             }
-            confirm.setContentText(msg);
 
-            ButtonType btnCancel = new ButtonType("Cancel class", ButtonBar.ButtonData.YES);
-            ButtonType btnKeep = new ButtonType("Keep", ButtonBar.ButtonData.CANCEL_CLOSE);
-            confirm.getButtonTypes().setAll(btnCancel, btnKeep);
+            confirm.setContentText(msg + "\n\nStudy in the freed time? Your plan moves later study earlier "
+                    + "to fill it. Or keep the time free for yourself.");
+            ButtonType btnStudy = new ButtonType("Cancel and study", ButtonBar.ButtonData.YES);
+            ButtonType btnFree = new ButtonType("Cancel and keep free", ButtonBar.ButtonData.NO);
+            ButtonType btnKeep = new ButtonType("Don't cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+            confirm.getButtonTypes().setAll(btnStudy, btnFree, btnKeep);
 
             Optional<ButtonType> res = confirm.showAndWait();
-            if (res.isPresent() && res.get() == btnCancel) {
+            if (res.isPresent() && (res.get() == btnStudy || res.get() == btnFree)) {
+                boolean keepFree = res.get() == btnFree;
                 for (DayRow r : cancellable) {
                     semesterService.recordCancellation(selectedDate, r.getTimetableEntryId());
+                    if (keepFree) {
+                        // Block the freed time so the planner leaves it empty; restoring the class removes it.
+                        dateOverrideDAO.insert(new DateOverride(null, selectedDate, r.getTimetableEntryId(), "ADD",
+                                r.getStart(), r.getEnd(), "OTHER", "Free time (cancelled " + r.getLabel() + ")"));
+                    }
                 }
                 if (replanRunner != null) {
                     replanRunner.run(semId, LocalDate.now(), () -> {

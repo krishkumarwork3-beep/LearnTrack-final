@@ -768,8 +768,8 @@ public class TopicFormController {
                         showError("Importance could not be updated", ex.getMessage());
                     }
                 });
-        picker.setTooltip(new Tooltip("How important this topic is for the exam.\n"
-                + "Must-know topics are planned first; Optional ones are the first to go when time is short."));
+        picker.setTooltip(new Tooltip("How important this topic is for the exam (used for revision).\n"
+                + "Learning always follows the syllabus order. Importance decides which learned topics are revised first."));
         fixedColumn(picker, IMPORTANCE_COL);
         return picker;
     }

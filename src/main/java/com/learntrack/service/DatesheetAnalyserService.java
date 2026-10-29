@@ -487,12 +487,46 @@ public class DatesheetAnalyserService {
             }
         }
 
+        // Exams of this batch that the sheet does not list lose their old date ("Date TBD"): a stale
+        // "1 Dec" or "31 Dec" is not on the official sheet, so it must neither show as the exam date
+        // nor stretch the exam period (and cancel classes) across the whole month.
+        clearDatesNotOnSheet(semesterId, targetExamType, allRows);
+
         ExamTimelineDAO timelineDAO = new ExamTimelineDAO();
         timelineDAO.setDatesheetAnnounced(semesterId, targetExamType, true);
+        applyWindow(semesterId, targetExamType, timelineDAO);
 
-        // The window is the user's exam span: min/max of the exams that now carry an exact date.
-        // A previous apply's window is replaced, not merged, so days outside the user's exams go
-        // back to the weekly timetable.
+        // Replan
+        if (replanService != null) {
+            replanService.regenerateSemesterPlan(semesterId, LocalDate.now());
+        }
+    }
+
+    private void clearDatesNotOnSheet(int semesterId, String targetExamType, List<DatesheetMatchRow> allRows)
+            throws SQLException {
+        Set<String> appliedCodes = new HashSet<>();
+        for (DatesheetMatchRow row : allRows) {
+            if (row.getCourseCode() != null) appliedCodes.add(row.getCourseCode().trim().toUpperCase());
+            if (row.getUserSubjectName() != null) appliedCodes.add(row.getUserSubjectName().trim().toUpperCase());
+        }
+        for (Exam e : examDAO.findBySemester(semesterId)) {
+            if (!targetExamType.equalsIgnoreCase(e.getExamType()) || e.getExamDate() == null) continue;
+            boolean onSheet = (e.getSubjectCode() != null && appliedCodes.contains(e.getSubjectCode().trim().toUpperCase()))
+                    || (e.getSubject() != null && appliedCodes.contains(e.getSubject().trim().toUpperCase()));
+            if (!onSheet) {
+                e.setExamDate(null);
+                e.setExamDateTentative(false);
+                examDAO.update(e);
+            }
+        }
+    }
+
+    /**
+     * The window is the user's exam span: min/max of the exams that now carry an exact date.
+     * A previous apply's window is replaced, not merged, so days outside the user's exams go
+     * back to the weekly timetable.
+     */
+    private void applyWindow(int semesterId, String targetExamType, ExamTimelineDAO timelineDAO) throws SQLException {
         LocalDate[] userWindow = timelineService.getDerivedWindow(semesterId, targetExamType);
         if (userWindow != null) {
             timelineDAO.setWindow(semesterId, targetExamType, userWindow[0], userWindow[1]);
@@ -506,11 +540,6 @@ public class DatesheetAnalyserService {
             }
         } else {
             timelineService.recomputeWindowFromDatesheet(semesterId, targetExamType);
-        }
-
-        // Replan
-        if (replanService != null) {
-            replanService.regenerateSemesterPlan(semesterId, LocalDate.now());
         }
     }
 

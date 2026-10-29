@@ -255,9 +255,9 @@ public class DashboardAndCancellationTest {
         int entryId = timetableDAO.insertEntry(entry);
 
         // Topics in syllabus order
-        int tA = topicDAO.insert(new Topic(null, examId, "Topic A", 3, 2, 1.0, 1.0, "LEARNING", 1.0, 1.0, 3, null, 0));
-        int tB = topicDAO.insert(new Topic(null, examId, "Topic B", 3, 2, 1.0, 1.0, "LEARNING", 1.0, 1.0, 3, null, 0));
-        int tC = topicDAO.insert(new Topic(null, examId, "Topic C", 3, 2, 1.0, 1.0, "LEARNING", 1.0, 1.0, 3, null, 0));
+        int tA = topicDAO.insert(new Topic(null, examId, "Topic A", 3, 2, 1.0, 1.0, "LEARNING", 1.0, 1.0, 3, null, 1));
+        int tB = topicDAO.insert(new Topic(null, examId, "Topic B", 3, 2, 1.0, 1.0, "LEARNING", 1.0, 1.0, 3, null, 1));
+        int tC = topicDAO.insert(new Topic(null, examId, "Topic C", 3, 2, 1.0, 1.0, "LEARNING", 1.0, 1.0, 3, null, 1));
 
         // Replan before cancellation
         replanService.regenerateSemesterPlan(semesterId, monday);

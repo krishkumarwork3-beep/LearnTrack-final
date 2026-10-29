@@ -31,6 +31,37 @@ public class SemesterReplanService {
     private final SyllabusDAO syllabusDAO;
     private final ExamWindowService examWindowService;
     private java.util.function.Supplier<LocalTime> currentTimeSupplier = null;
+    /** A session that splits an item is at least this long (30 min)... */
+    static final double MIN_SPLIT_SESSION = 0.5;
+    /** ...and leaves at least this much (30 min) for the next session, never a 10-minute scrap. */
+    static final double MIN_REMAINDER = 0.5;
+    /**
+     * How long to study an item that still needs {@code need} hours in a gap of {@code room} hours,
+     * or 0 when it should not start in this gap. An item is done in one sitting when it fits;
+     * otherwise it is split into real pieces (30 min or more now, 30 min or more left), so a 1-hour
+     * topic is never cut into 50 + 10 minutes and never gets more time than it needs.
+     */
+    static double sessionLength(double need, double room, double cap, double minSession) {
+        return sessionLength(need, room, cap, minSession, false);
+    }
+
+    /**
+     * As above; a {@code flexible} item (a revision pass, PYQ practice) can use any gap of at least
+     * the minimum session, so short gaps between classes are still used for study.
+     */
+    static double sessionLength(double need, double room, double cap, double minSession, boolean flexible) {
+        double alloc = Math.min(need, Math.min(cap, room));
+        if (flexible) {
+            return alloc >= minSession - 1e-9 ? alloc : 0;
+        }
+        if (alloc < minSession - 1e-9 || alloc <= 0) return 0;
+        if (need - alloc > 0.01) {                         // the item would be split
+            if (need - alloc < MIN_REMAINDER) alloc = need - MIN_REMAINDER;
+            if (alloc < MIN_SPLIT_SESSION - 1e-9) return 0;
+        }
+        return alloc;
+    }
+
     /** Outcome of the coverage optimizer from the most recent replan; read by the dashboard. */
     private volatile CoveragePlan lastCoveragePlan;
 
@@ -189,6 +220,17 @@ public class SemesterReplanService {
             simTopics.add(copy);
             simTopicMap.put(copy.getTopicId(), copy);
         }
+        // The optimizer overwrites syllabusOrder with a plan rank; keep the real positions and each
+        // exam's subject so learning can follow the syllabus across a subject's exams.
+        syllabusPositionByTopic = new HashMap<>();
+        for (Topic t : simTopics) {
+            if (t.getSyllabusOrder() != Long.MAX_VALUE) syllabusPositionByTopic.put(t.getTopicId(), t.getSyllabusOrder());
+        }
+        subjectByExam = new HashMap<>();
+        for (Exam e : allExams) {
+            String key = e.getSubjectCode() != null && !e.getSubjectCode().isBlank() ? e.getSubjectCode() : e.getSubject();
+            if (key != null) subjectByExam.put(e.getExamId(), key.trim());
+        }
 
         List<Exam> simExams = new ArrayList<>();
         Map<Integer, Exam> simExamMap = new HashMap<>();
@@ -320,12 +362,10 @@ public class SemesterReplanService {
         }
 
         // 5b. Decide which topics fit before their exams, weighted by importance (see CoverageOptimizer).
-        CoverageOptimizer.OrderMode orderMode = "SYLLABUS".equalsIgnoreCase(
-                settingsDAO.get("planner_order_mode", "IMPORTANCE"))
-                ? CoverageOptimizer.OrderMode.SYLLABUS : CoverageOptimizer.OrderMode.IMPORTANCE;
-        double capacityFactor = settingsDAO.getDouble("planner_capacity_factor", 0.9);
+        // Learning always follows the syllabus order and uses all free time; importance only
+        // orders revision.
         lastCoveragePlan = new CoverageOptimizer(scoringService)
-                .optimize(simTopics, simExams, studyBudgetByDate, fromDate, capacityFactor, orderMode);
+                .optimize(simTopics, simExams, studyBudgetByDate, fromDate, 1.0, CoverageOptimizer.OrderMode.SYLLABUS);
 
         // 5c. Walk each day from fromDate to horizon
         LocalDate date = fromDate;
@@ -425,9 +465,10 @@ public class SemesterReplanService {
                     }
                     double simRemainingBeforeAlloc = item.getRemainingHours();
                     double cap = item.isSkill() ? skillSessionLength : maxSessionTopic;
-                    double alloc = Math.min(Math.min(simRemainingBeforeAlloc, remainingSlot), Math.min(cap, studyBudget));
+                    double alloc = sessionLength(simRemainingBeforeAlloc, Math.min(remainingSlot, studyBudget), cap, minSessionHours,
+                            isFlexible(item.getItemType().name()));
 
-                    if (alloc < minSessionHours) {
+                    if (alloc <= 0) {
                         // Fragment too small, defer this item so it is not lost
                         deferredInSlot.add(item);
                         continue;
@@ -522,6 +563,12 @@ public class SemesterReplanService {
             }
 
             String subj = getItemSubject(cand, simExamMap);
+            // Alternate subjects only within the same priority: never pick a skill or a revision
+            // over a learning topic just because the subject differs.
+            if (firstValidSameSubject != null && cand.tier() > firstValidSameSubject.tier()) {
+                deferred.add(cand);
+                break;
+            }
             if (lastScheduledSubject == null || subj == null || !subj.equalsIgnoreCase(lastScheduledSubject)) {
                 selected = cand;
                 break;
@@ -601,6 +648,38 @@ public class SemesterReplanService {
                         return true;
                     }
                 }
+            }
+        }
+        return hasEarlierTopicInSubject(candTopicId, examId, simTopicMap);
+    }
+
+    /** Real syllabus position (unit, then subtopic) of each simulated topic; filled per replan. */
+    private Map<Integer, Long> syllabusPositionByTopic = new HashMap<>();
+    /** Subject of each exam (code, else name); filled per replan. */
+    private Map<Integer, String> subjectByExam = new HashMap<>();
+
+    /**
+     * Learning follows the syllabus across the whole subject: a topic waits while an earlier
+     * syllabus topic of the same subject is still unlearned, even when that topic belongs to the
+     * subject's other exam (MST units 3-4 do not jump ahead of EST units 1-2, and vice versa).
+     * A topic that does not fit before its exam never holds back one that does.
+     */
+    private boolean hasEarlierTopicInSubject(int candTopicId, int candExamId, Map<Integer, Topic> simTopicMap) {
+        String subject = subjectByExam.get(candExamId);
+        Long candPos = syllabusPositionByTopic.get(candTopicId);
+        Topic cand = simTopicMap.get(candTopicId);
+        if (subject == null || candPos == null || cand == null) {
+            return false;
+        }
+        for (Topic t : simTopicMap.values()) {
+            if (t.getTopicId() == candTopicId || t.getExamId() == candExamId) continue;
+            if (!subject.equalsIgnoreCase(subjectByExam.get(t.getExamId()))) continue;
+            if (!"LEARNING".equalsIgnoreCase(t.getPhase()) || t.getImportantFlag() != 1
+                    || t.getRemainingHours() <= 0.05) continue;
+            if (cand.isPlanned() && !t.isPlanned()) continue;
+            Long pos = syllabusPositionByTopic.get(t.getTopicId());
+            if (pos != null && pos < candPos) {
+                return true;
             }
         }
         return false;
@@ -708,8 +787,8 @@ public class SemesterReplanService {
 
                 while (remainingSlot >= 0.05 && eBudget >= 0.05 && eq != null && !eq.isEmpty()) {
                     PriorityItem item = eq.poll();
-                    double alloc = Math.min(Math.min(item.getRemainingHours(), remainingSlot), Math.min(maxSessionTopic, eBudget));
-                    if (alloc < 0.05) break;
+                    double alloc = sessionLength(item.getRemainingHours(), Math.min(remainingSlot, eBudget), maxSessionTopic, minSessionHours);
+                    if (alloc <= 0) { eq.offer(item); break; }
 
                     long allocMinutes = Math.round(alloc * 60.0);
                     LocalTime slotEnd = slotStart.plusMinutes(allocMinutes);
@@ -757,8 +836,8 @@ public class SemesterReplanService {
                     for (Topic ct : ceTopics) {
                         double rem = "REVISION".equalsIgnoreCase(ct.getPhase()) ? ct.getRevisionRemainingHours() : ct.getRemainingHours();
                         if (rem >= 0.05 && remainingSlot >= 0.05 && ceBudget >= 0.05) {
-                            double alloc = Math.min(Math.min(rem, remainingSlot), Math.min(maxSessionTopic, ceBudget));
-                            if (alloc < 0.05) continue;
+                            double alloc = sessionLength(rem, Math.min(remainingSlot, ceBudget), maxSessionTopic, minSessionHours);
+                            if (alloc <= 0) continue;
 
                             long allocMinutes = Math.round(alloc * 60.0);
                             LocalTime slotEnd = slotStart.plusMinutes(allocMinutes);
@@ -795,6 +874,7 @@ public class SemesterReplanService {
             }
 
             // Fill remainder from general queue, re-validating every item against simulated state
+            List<PriorityItem> skippedHere = new ArrayList<>();
             while (remainingSlot >= 0.05 && leftoverBudget >= 0.05 && fallbackQueue != null && !fallbackQueue.isEmpty()) {
                 PriorityItem item = fallbackQueue.poll();
                 Integer trackSkillId = item.isSkill() ? (item.getExamId() != null ? item.getExamId() : item.getId()) : null;
@@ -808,8 +888,8 @@ public class SemesterReplanService {
                 item.setRemainingHours(Math.min(item.getRemainingHours(), simRemaining));
                 double simRemainingBeforeAlloc = item.getRemainingHours();
                 double cap = item.isSkill() ? skillSessionLength : maxSessionTopic;
-                double alloc = Math.min(Math.min(simRemainingBeforeAlloc, remainingSlot), Math.min(cap, leftoverBudget));
-                if (alloc < 0.05) continue;
+                double alloc = sessionLength(simRemainingBeforeAlloc, Math.min(remainingSlot, leftoverBudget), cap, minSessionHours);
+                if (alloc <= 0) { skippedHere.add(item); continue; }
 
                 long allocMinutes = Math.round(alloc * 60.0);
                 LocalTime slotEnd = slotStart.plusMinutes(allocMinutes);
@@ -843,6 +923,7 @@ public class SemesterReplanService {
                     }
                 }
             }
+            if (fallbackQueue != null) fallbackQueue.addAll(skippedHere);   // did not fit this gap; may fit the next
         }
 
         // PHASE 2: Filler pass
@@ -939,8 +1020,8 @@ public class SemesterReplanService {
 
                 while (remainingSlot >= 0.05 && eBudget >= 0.05 && eq != null && !eq.isEmpty()) {
                     PriorityItem item = eq.poll();
-                    double alloc = Math.min(Math.min(item.getRemainingHours(), remainingSlot), Math.min(maxSessionTopic, eBudget));
-                    if (alloc < 0.05) break;
+                    double alloc = sessionLength(item.getRemainingHours(), Math.min(remainingSlot, eBudget), maxSessionTopic, minSessionHours);
+                    if (alloc <= 0) { eq.offer(item); break; }
 
                     long allocMinutes = Math.round(alloc * 60.0);
                     LocalTime slotEnd = slotStart.plusMinutes(allocMinutes);
@@ -981,6 +1062,7 @@ public class SemesterReplanService {
             }
 
             // Unused share falls through to general queue up to clashBudgetRemaining, re-validating against simulated state
+            List<PriorityItem> skippedHere = new ArrayList<>();
             while (remainingSlot >= 0.05 && clashBudgetRemaining >= 0.05 && fallbackQueue != null && !fallbackQueue.isEmpty()) {
                 PriorityItem item = fallbackQueue.poll();
                 Integer trackSkillId = item.isSkill() ? (item.getExamId() != null ? item.getExamId() : item.getId()) : null;
@@ -994,8 +1076,8 @@ public class SemesterReplanService {
                 item.setRemainingHours(Math.min(item.getRemainingHours(), simRemaining));
                 double simRemainingBeforeAlloc = item.getRemainingHours();
                 double cap = item.isSkill() ? skillSessionLength : maxSessionTopic;
-                double alloc = Math.min(Math.min(simRemainingBeforeAlloc, remainingSlot), Math.min(cap, clashBudgetRemaining));
-                if (alloc < 0.05) continue;
+                double alloc = sessionLength(simRemainingBeforeAlloc, Math.min(remainingSlot, clashBudgetRemaining), cap, minSessionHours);
+                if (alloc <= 0) { skippedHere.add(item); continue; }
 
                 long allocMinutes = Math.round(alloc * 60.0);
                 LocalTime slotEnd = slotStart.plusMinutes(allocMinutes);
@@ -1029,6 +1111,7 @@ public class SemesterReplanService {
                     }
                 }
             }
+            if (fallbackQueue != null) fallbackQueue.addAll(skippedHere);   // did not fit this gap; may fit the next
         }
 
         // PHASE 2: Filler pass
@@ -1096,6 +1179,17 @@ public class SemesterReplanService {
         Map<Integer, Double> examFillerHours = new HashMap<>();
         Map<Integer, Integer> topicFillerCounts = new HashMap<>();
         Map<Integer, Integer> skillFillerCounts = new HashMap<>();
+        // One session per skill per day, counting what the main pass already placed today.
+        Set<Integer> skillsToday = new HashSet<>();
+        for (DailyLogEntry e : schedule) {
+            String type = e.getItemType() == null ? "" : e.getItemType().toUpperCase();
+            if (type.equals("SKILL")) {
+                skillsToday.add(e.getItemId());
+            } else if (type.equals("SKILL_LEARN") || type.equals("SKILL_REVISE")) {
+                SkillSubtopic st = simSubtopicMap == null ? null : simSubtopicMap.get(e.getItemId());
+                if (st != null) skillsToday.add(st.getSkillId());
+            }
+        }
         String lastSubject = initialLastSubject;
         long minSessionMinutes = Math.max(1, Math.round(minSessionHours * 60.0));
         String defaultStatus = date.isAfter(LocalDate.now()) ? "PLANNED" : "PENDING";
@@ -1127,6 +1221,25 @@ public class SemesterReplanService {
                             if (sub == null || sub.getReviseRemainingHours() < addedHours - 0.001) {
                                 canMerge = false;
                             }
+                        } else {
+                            canMerge = false;               // revision / PYQ blocks keep their planned length
+                        }
+                        // Merging must not leave a scrap behind: it finishes the item or leaves 30 min+.
+                        if (canMerge) {
+                            double left = Double.NaN;
+                            if ("TOPIC_LEARN".equalsIgnoreCase(prev.getItemType())) {
+                                Topic t = simTopicMap.get(prev.getItemId());
+                                left = t == null ? 0 : t.getRemainingHours() - addedHours;
+                            } else {
+                                SkillSubtopic sub = simSubtopicMap != null ? simSubtopicMap.get(prev.getItemId()) : null;
+                                if (sub != null) {
+                                    left = ("SKILL_LEARN".equalsIgnoreCase(prev.getItemType())
+                                            ? sub.getLearnRemainingHours() : sub.getReviseRemainingHours()) - addedHours;
+                                }
+                            }
+                            if (!Double.isNaN(left) && left > 0.01 && left < MIN_REMAINDER - 1e-9) {
+                                canMerge = false;
+                            }
                         }
                         if (canMerge) {
                             prev.setSlotEnd(slot.getEnd());
@@ -1137,35 +1250,40 @@ public class SemesterReplanService {
                     break;
                 }
 
-                // Phase 2 Filler: Prioritize unfinished LEARN topics in continuity & syllabus order before extra revision/skill/pyq
-                FillerCandidate cand = pickUnfinishedLearnCandidate(
-                        unfinishedExams, simTopics, date, lastSubject, simExamMap
-                );
-                if (cand == null) {
-                    cand = pickFillerCandidate(
-                            unfinishedExams, simTopics, simSkills, simSubtopics, date, lastSubject,
-                            examFillerHours, topicFillerCounts, skillFillerCounts, simExamMap, simSubtopicMap
-                    );
-                }
-                if (cand == null) {
-                    break;
-                }
-
-                double capHours = cand.isSkill ? skillSessionLength : maxSessionTopic;
-                if ("TOPIC_LEARN".equalsIgnoreCase(cand.itemType)) {
-                    capHours = Math.min(capHours, cand.remainingHours);
-                }
-                long capMin = Math.round(capHours * 60.0);
-                long allocMin = Math.min(remMin, capMin);
-
-                // If remainder in this slot after this allocation would be < minSessionMinutes, merge immediately
-                long leftoverAfter = remMin - allocMin;
-                if (leftoverAfter > 0 && leftoverAfter < minSessionMinutes) {
-                    if (!"TOPIC_LEARN".equalsIgnoreCase(cand.itemType)
-                            || (cand.remainingHours * 60.0 >= allocMin + leftoverAfter)) {
-                        allocMin += leftoverAfter;
-                        leftoverAfter = 0;
+                // Phase 2 Filler: the next syllabus topic first; if it cannot use this gap, a skill;
+                // if not that either, a revision pass or PYQ practice, which fit any gap of 15 min+.
+                // Never more than an item still needs, and topics split only into real pieces.
+                FillerCandidate cand = null;
+                double need = 0;
+                double allocHoursPlanned = 0;
+                for (int attempt = 0; attempt < 3 && cand == null; attempt++) {
+                    FillerCandidate c = attempt == 0
+                            ? pickUnfinishedLearnCandidate(unfinishedExams, simTopics, date, lastSubject, simExamMap)
+                            : pickFillerCandidate(unfinishedExams, simTopics, simSkills, simSubtopics, date, lastSubject,
+                                    examFillerHours, topicFillerCounts, skillFillerCounts, simExamMap, simSubtopicMap,
+                                    skillsToday, attempt == 2);
+                    if (c == null) continue;
+                    double n = fillerNeed(c, simTopicMap, simExamMap, simSubtopicMap, skillSessionLength);
+                    double a = sessionLength(n, remMin / 60.0, c.isSkill ? skillSessionLength : maxSessionTopic,
+                            minSessionHours, isFlexible(c.itemType));
+                    if (a > 0) {
+                        cand = c;
+                        need = n;
+                        allocHoursPlanned = a;
                     }
+                }
+                if (cand == null) {
+                    break;                                  // nothing at all fits this gap
+                }
+                long allocMin = Math.round(allocHoursPlanned * 60.0);
+
+                // A sub-minimum gap after this session is absorbed only if the item really needs it
+                long leftoverAfter = remMin - allocMin;
+                if (leftoverAfter > 0 && leftoverAfter < minSessionMinutes
+                        && need * 60.0 >= allocMin + leftoverAfter - 0.5
+                        && (need * 60.0 - allocMin - leftoverAfter < 0.5 || need * 60.0 - allocMin - leftoverAfter >= MIN_REMAINDER * 60.0 - 0.5)) {
+                    allocMin += leftoverAfter;
+                    leftoverAfter = 0;
                 }
 
                 LocalTime sessionEnd = cursor.plusMinutes(allocMin);
@@ -1179,6 +1297,10 @@ public class SemesterReplanService {
                         simTopicMap, simExamMap, simSkillMap, simSubtopicMap);
 
                 lastSubject = cand.subject;
+                if (cand.isSkill) {
+                    if ("SKILL".equals(cand.itemType)) skillsToday.add(cand.itemId);
+                    else if (cand.examId != null) skillsToday.add(cand.examId);   // skill id for subtopics
+                }
                 if (cand.examId != null) {
                     examFillerHours.put(cand.examId, examFillerHours.getOrDefault(cand.examId, 0.0) + allocHours);
                 }
@@ -1199,6 +1321,40 @@ public class SemesterReplanService {
         }
     }
 
+    /** Revision passes and PYQ practice can be any length, so they may fill short gaps. */
+    private static boolean isFlexible(String itemType) {
+        return "TOPIC_REVISE".equalsIgnoreCase(itemType) || "PYQ_PRACTICE".equalsIgnoreCase(itemType);
+    }
+
+    /** Hours the filler candidate still really needs (a revision cycle, the PYQ hours left, ...). */
+    private double fillerNeed(FillerCandidate cand, Map<Integer, Topic> simTopicMap, Map<Integer, Exam> simExamMap,
+                              Map<Integer, SkillSubtopic> simSubtopicMap, double skillSessionLength) {
+        switch (cand.itemType.toUpperCase()) {
+            case "TOPIC_LEARN": {
+                Topic t = simTopicMap.get(cand.itemId);
+                return t == null ? 0 : t.getRemainingHours();
+            }
+            case "TOPIC_REVISE": {
+                Topic t = simTopicMap.get(cand.itemId);
+                return t == null ? 0 : t.getRevisionRemainingHours();
+            }
+            case "PYQ_PRACTICE": {
+                Exam e = simExamMap.get(cand.itemId);
+                return e == null ? 0 : e.getPyqRemainingHours();
+            }
+            case "SKILL_LEARN": {
+                SkillSubtopic s = simSubtopicMap == null ? null : simSubtopicMap.get(cand.itemId);
+                return s == null ? 0 : s.getLearnRemainingHours();
+            }
+            case "SKILL_REVISE": {
+                SkillSubtopic s = simSubtopicMap == null ? null : simSubtopicMap.get(cand.itemId);
+                return s == null ? 0 : s.getReviseRemainingHours();
+            }
+            default:
+                return skillSessionLength;               // legacy skill without subtopics
+        }
+    }
+
     private FillerCandidate pickUnfinishedLearnCandidate(List<Exam> unfinishedExams,
                                                          List<Topic> simTopics,
                                                          LocalDate date,
@@ -1215,6 +1371,8 @@ public class SemesterReplanService {
         }
 
         List<Topic> candidates = new ArrayList<>();
+        Map<Integer, Topic> topicById = new HashMap<>();
+        for (Topic t : simTopics) topicById.put(t.getTopicId(), t);
         for (Topic t : simTopics) {
             if (unfinishedExamIds.contains(t.getExamId())
                     && "LEARNING".equalsIgnoreCase(t.getPhase())
@@ -1239,6 +1397,10 @@ public class SemesterReplanService {
                             }
                         }
                     }
+                }
+                if (!hasEarlier && !(t.getRemainingHours() < t.getHoursNeeded() - 0.001)
+                        && hasEarlierTopicInSubject(t.getTopicId(), t.getExamId(), topicById)) {
+                    hasEarlier = true;   // an earlier syllabus topic of the same subject comes first
                 }
                 if (!hasEarlier) {
                     candidates.add(t);
@@ -1332,6 +1494,11 @@ public class SemesterReplanService {
         }
     }
 
+    /**
+     * What to do with free time once every learning topic is placed: skills first, then a
+     * revision of an already-learned exam topic (most important first), then PYQ practice.
+     * Every candidate still needs real hours, so leftover time is never padded.
+     */
     private FillerCandidate pickFillerCandidate(List<Exam> unfinishedExams,
                                                 List<Topic> simTopics,
                                                 List<Skill> simSkills,
@@ -1342,80 +1509,16 @@ public class SemesterReplanService {
                                                 Map<Integer, Integer> topicFillerCounts,
                                                 Map<Integer, Integer> skillFillerCounts,
                                                 Map<Integer, Exam> simExamMap,
-                                                Map<Integer, SkillSubtopic> simSubtopicMap) {
-        if (unfinishedExams != null && !unfinishedExams.isEmpty()) {
-            List<Exam> candidates = new ArrayList<>();
-            for (Exam e : unfinishedExams) {
-                String subj = getItemSubject(e, simExamMap);
-                if (lastSubject == null || subj == null || !subj.equalsIgnoreCase(lastSubject)) {
-                    candidates.add(e);
-                }
-            }
-            if (candidates.isEmpty()) {
-                candidates = new ArrayList<>(unfinishedExams);
-            }
-
-            candidates.sort((e1, e2) -> {
-                double w1 = scoringService.examWeight(e1) / (double) scoringService.daysLeft(e1, date);
-                double w2 = scoringService.examWeight(e2) / (double) scoringService.daysLeft(e2, date);
-                if (w1 <= 0.0) w1 = 0.01;
-                if (w2 <= 0.0) w2 = 0.01;
-                double h1 = examFillerHours.getOrDefault(e1.getExamId(), 0.0);
-                double h2 = examFillerHours.getOrDefault(e2.getExamId(), 0.0);
-                double load1 = h1 / w1;
-                double load2 = h2 / w2;
-                int cmp = Double.compare(load1, load2);
-                if (cmp != 0) return cmp;
-
-                long dl1 = scoringService.daysLeft(e1, date);
-                long dl2 = scoringService.daysLeft(e2, date);
-                cmp = Long.compare(dl1, dl2);
-                if (cmp != 0) return cmp;
-
-                cmp = Double.compare(e2.getCredits(), e1.getCredits());
-                if (cmp != 0) return cmp;
-
-                return Integer.compare(e1.getExamId(), e2.getExamId());
-            });
-
-            Exam chosenExam = candidates.get(0);
-            String subj = getItemSubject(chosenExam, simExamMap);
-
-            List<Topic> examTopics = getTopicsForExam(simTopics, chosenExam.getExamId());
-            List<Topic> validTopics = new ArrayList<>();
-            for (Topic t : examTopics) {
-                if (t.getImportantFlag() == 1) {
-                    validTopics.add(t);
-                }
-            }
-            if (validTopics.isEmpty() && !examTopics.isEmpty()) {
-                validTopics = examTopics;
-            }
-
-            if (!validTopics.isEmpty()) {
-                validTopics.sort((t1, t2) -> {
-                    int c1 = topicFillerCounts.getOrDefault(t1.getTopicId(), 0);
-                    int c2 = topicFillerCounts.getOrDefault(t2.getTopicId(), 0);
-                    if (c1 != c2) return Integer.compare(c1, c2);
-                    if (t1.getImportance() != t2.getImportance()) {
-                        return Integer.compare(t2.getImportance(), t1.getImportance());
-                    }
-                    if (t1.getDifficulty() != t2.getDifficulty()) {
-                        return Integer.compare(t2.getDifficulty(), t1.getDifficulty());
-                    }
-                    return Integer.compare(t1.getTopicId(), t2.getTopicId());
-                });
-
-                Topic chosenTopic = validTopics.get(0);
-                return new FillerCandidate("TOPIC_REVISE", chosenTopic.getTopicId(), subj, chosenExam.getExamId(), false);
-            }
-
-            return new FillerCandidate("PYQ_PRACTICE", chosenExam.getExamId(), subj, chosenExam.getExamId(), false);
-        }
-
-        if (simSubtopics != null && !simSubtopics.isEmpty()) {
+                                                Map<Integer, SkillSubtopic> simSubtopicMap,
+                                                Set<Integer> skillsToday,
+                                                boolean skipSkills) {
+        // 1. Skills
+        if (!skipSkills && simSubtopics != null && !simSubtopics.isEmpty()) {
             List<SkillSubtopic> candidates = new ArrayList<>();
             for (SkillSubtopic st : simSubtopics) {
+                if (skillsToday.contains(st.getSkillId())) {
+                    continue;
+                }
                 if (!st.isLearned() && st.getLearnRemainingHours() > 0.05) {
                     candidates.add(st);
                 } else if (st.isLearned() && !st.isRevised() && st.getReviseRemainingHours() > 0.05
@@ -1437,22 +1540,64 @@ public class SemesterReplanService {
             }
         }
 
-        if (simSkills != null && !simSkills.isEmpty()) {
-            List<Skill> candidates = new ArrayList<>();
-            for (Skill s : simSkills) {
-                candidates.add(s);
-            }
-            candidates.sort((s1, s2) -> {
-                int c1 = skillFillerCounts.getOrDefault(s1.getSkillId(), 0);
-                int c2 = skillFillerCounts.getOrDefault(s2.getSkillId(), 0);
-                if (c1 != c2) return Integer.compare(c1, c2);
-                return Integer.compare(s1.getSkillId(), s2.getSkillId());
+        // 2. Revision of learned exam topics, nearest exam first, most important topic first
+        if (unfinishedExams != null && !unfinishedExams.isEmpty()) {
+            List<Exam> exams = new ArrayList<>(unfinishedExams);
+            exams.sort((e1, e2) -> {
+                int cmp = Long.compare(scoringService.daysLeft(e1, date), scoringService.daysLeft(e2, date));
+                if (cmp != 0) return cmp;
+                double h1 = examFillerHours.getOrDefault(e1.getExamId(), 0.0);
+                double h2 = examFillerHours.getOrDefault(e2.getExamId(), 0.0);
+                cmp = Double.compare(h1, h2);
+                if (cmp != 0) return cmp;
+                return Integer.compare(e1.getExamId(), e2.getExamId());
             });
-
-            Skill chosenSkill = candidates.get(0);
-            return new FillerCandidate("SKILL", chosenSkill.getSkillId(), "SKILL", null, true);
+            for (Exam exam : exams) {
+                List<Topic> learned = new ArrayList<>();
+                for (Topic t : getTopicsForExam(simTopics, exam.getExamId())) {
+                    if (t.getImportantFlag() == 1 && "REVISION".equalsIgnoreCase(t.getPhase())
+                            && t.getRevisionRemainingHours() > 0.05
+                            && topicFillerCounts.getOrDefault(t.getTopicId(), 0) == 0) {
+                        learned.add(t);
+                    }
+                }
+                if (!learned.isEmpty()) {
+                    learned.sort((t1, t2) -> {
+                        if (t1.getImportance() != t2.getImportance()) {
+                            return Integer.compare(t2.getImportance(), t1.getImportance());
+                        }
+                        return Long.compare(t1.getSyllabusOrder(), t2.getSyllabusOrder());
+                    });
+                    Topic chosen = learned.get(0);
+                    return new FillerCandidate("TOPIC_REVISE", chosen.getTopicId(), getItemSubject(exam, simExamMap),
+                            exam.getExamId(), false, chosen.getRevisionRemainingHours());
+                }
+            }
+            // 3. Previous-year papers, once the exam's planned topics are learned
+            for (Exam exam : exams) {
+                if (exam.getPyqRemainingHours() > 0.05
+                        && scoringService.pyqEligible(exam, getTopicsForExam(simTopics, exam.getExamId()), date)) {
+                    return new FillerCandidate("PYQ_PRACTICE", exam.getExamId(), getItemSubject(exam, simExamMap),
+                            exam.getExamId(), false, exam.getPyqRemainingHours());
+                }
+            }
         }
 
+        // 4. Legacy skills without subtopics
+        if (!skipSkills && simSkills != null && !simSkills.isEmpty()) {
+            Set<Integer> withSubtopics = new HashSet<>();
+            if (simSubtopics != null) for (SkillSubtopic st : simSubtopics) withSubtopics.add(st.getSkillId());
+            List<Skill> candidates = new ArrayList<>();
+            for (Skill s : simSkills) {
+                if (!withSubtopics.contains(s.getSkillId()) && !skillsToday.contains(s.getSkillId())) {
+                    candidates.add(s);
+                }
+            }
+            if (!candidates.isEmpty()) {
+                candidates.sort(Comparator.comparingInt((Skill s) -> -s.getPriority()).thenComparing(Skill::getSkillId));
+                return new FillerCandidate("SKILL", candidates.get(0).getSkillId(), "SKILL", null, true);
+            }
+        }
         return null;
     }
 

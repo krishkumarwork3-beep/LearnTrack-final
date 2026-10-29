@@ -2729,3 +2729,21 @@
     -fx-border-color: transparent transparent transparent -lt-nav-indicator;
     -fx-background-color: -lt-nav-active;
 }
+
+/* Coverage: learned part solid, planned part lighter, the rest the empty track. */
+.two-part-bar {
+    -fx-background-color: -lt-surface-sunken;
+    -fx-background-radius: 99;
+    -fx-min-height: 8;
+    -fx-pref-height: 8;
+    -fx-max-height: 8;
+}
+
+.bar-learned {
+    -fx-background-color: -lt-primary;
+    -fx-background-radius: 99 0 0 99;
+}
+
+.bar-planned {
+    -fx-background-color: derive(-lt-primary, 60%);
+}

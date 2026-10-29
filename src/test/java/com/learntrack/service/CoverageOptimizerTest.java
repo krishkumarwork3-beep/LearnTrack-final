@@ -49,23 +49,21 @@ class CoverageOptimizerTest {
     }
 
     @Test
-    void mustKnowTopicsWinWhenTimeIsShort() {
+    void mostTopicsFitWhenTimeIsShortAndLearningKeepsSyllabusOrder() {
         Exam e = exam(1, TODAY.plusDays(3), 4, 50); // 3 days x 2h = 6h before the exam
-        Topic optionalEarly = topic(1, 1, 1, 3, 1);
-        Topic mustKnowLate = topic(2, 1, 5, 3, 2);
-        Topic highLate = topic(3, 1, 4, 3, 3);
+        Topic longFirst = topic(1, 1, 5, 4, 1);    // importance does not matter for learning
+        Topic a = topic(2, 1, 1, 2, 2);
+        Topic b = topic(3, 1, 1, 2, 3);
+        Topic c = topic(4, 1, 1, 2, 4);
 
-        CoveragePlan plan = optimizer.optimize(List.of(optionalEarly, mustKnowLate, highLate), List.of(e),
-                capacity(2, TODAY.plusDays(3)), TODAY, 1.0, CoverageOptimizer.OrderMode.IMPORTANCE);
+        CoveragePlan plan = optimizer.optimize(List.of(longFirst, a, b, c), List.of(e),
+                capacity(2, TODAY.plusDays(3)), TODAY, 1.0, CoverageOptimizer.OrderMode.SYLLABUS);
 
-        assertTrue(mustKnowLate.isPlanned());
-        assertTrue(highLate.isPlanned());
-        assertFalse(optionalEarly.isPlanned(), "the optional topic is the one that does not fit");
+        assertTrue(a.isPlanned() && b.isPlanned() && c.isPlanned(), "three 2h topics cover more syllabus than one 4h topic");
+        assertFalse(longFirst.isPlanned());
         assertEquals(1, plan.atRiskCount());
-        assertEquals(0, plan.criticalAtRiskCount());
-        // Must-know is studied first even though it is later in the syllabus.
-        assertTrue(mustKnowLate.getSyllabusOrder() < highLate.getSyllabusOrder());
-        assertTrue(optionalEarly.getSyllabusOrder() >= CoverageOptimizer.UNPLANNED_RANK_OFFSET);
+        assertTrue(a.getSyllabusOrder() < b.getSyllabusOrder() && b.getSyllabusOrder() < c.getSyllabusOrder());
+        assertTrue(longFirst.getSyllabusOrder() >= CoverageOptimizer.UNPLANNED_RANK_OFFSET);
     }
 
     @Test

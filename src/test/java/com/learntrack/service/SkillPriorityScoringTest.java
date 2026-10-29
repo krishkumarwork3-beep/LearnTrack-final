@@ -42,15 +42,17 @@ class SkillPriorityScoringTest {
     }
 
     @Test
-    void plannedTopicsOutrankPyqAndUnplannedTopicsOutrankSkills() {
+    void learningComesFirstThenSkillsThenRevision() {
         PriorityItem planned = new PriorityItem(PriorityItem.ItemType.TOPIC_LEARN, 1, "a", 1, 1, 1);
         PriorityItem unplanned = new PriorityItem(PriorityItem.ItemType.TOPIC_LEARN, 2, "b", 1, 1, 1);
         unplanned.setPlanned(false);
         PriorityItem pyq = new PriorityItem(PriorityItem.ItemType.PYQ_PRACTICE, 3, "c", 1, 1, 1);
         PriorityItem skill = new PriorityItem(PriorityItem.ItemType.SKILL_LEARN, 4, "d", 99, 1, 1);
 
-        assertTrue(PriorityItem.TIER_COMPARATOR.compare(planned, pyq) < 0);
-        assertTrue(PriorityItem.TIER_COMPARATOR.compare(pyq, unplanned) < 0);
+        PriorityItem revise = new PriorityItem(PriorityItem.ItemType.TOPIC_REVISE, 5, "e", 99, 1, 1);
+        assertTrue(PriorityItem.TIER_COMPARATOR.compare(planned, unplanned) < 0);
         assertTrue(PriorityItem.TIER_COMPARATOR.compare(unplanned, skill) < 0);
+        assertTrue(PriorityItem.TIER_COMPARATOR.compare(skill, revise) < 0);
+        assertTrue(PriorityItem.TIER_COMPARATOR.compare(skill, pyq) < 0);
     }
 }

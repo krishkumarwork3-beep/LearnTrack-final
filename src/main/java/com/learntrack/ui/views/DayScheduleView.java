@@ -115,10 +115,8 @@ public class DayScheduleView extends VBox {
                     if (!canLog) {
                         checkBox.setDisable(true);
                         checkBox.setTooltip(new Tooltip("Available on the day of the session"));
-                    } else if (busyProperty != null && busyProperty.get()) {
-                        checkBox.setDisable(true);
-                        checkBox.setTooltip(null);
                     } else {
+                        // Never locked while a replan runs: ticks are queued and saved in order.
                         checkBox.setDisable(false);
                         checkBox.setTooltip(null);
                     }

@@ -71,14 +71,15 @@ public class PriorityItem implements Comparable<PriorityItem> {
     }
 
     /**
-     * Tier 0 = planned topic (LEARN / REVISE): fits before its exam, scheduled first.
-     * Tier 1 = PYQ (eligible once the planned topics of its exam are learned).
-     * Tier 2 = topic the optimizer could not fit: studied with any time left over.
-     * Tier 3 = Skills (strictly lower priority than all exam work).
+     * Study priority: learning new syllabus comes first, then skills, then revision.
+     * Tier 0 = learn a topic that fits before its exam.
+     * Tier 1 = learn a topic that does not fit (still worth marks if time frees up).
+     * Tier 2 = skills.
+     * Tier 3 = revise a topic, or practise previous-year papers.
      */
     public int tier() {
-        if (isTopic()) return planned ? 0 : 2;
-        if (isPyq()) return 1;
+        if (itemType == ItemType.TOPIC_LEARN) return planned ? 0 : 1;
+        if (isSkill()) return 2;
         return 3;
     }
 

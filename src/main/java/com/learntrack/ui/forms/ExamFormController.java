@@ -1244,7 +1244,8 @@ public class ExamFormController {
             }
 
             SubjectInfo subject = row.getSubjectInfo();
-            Stage stage = (Stage) mstSection.getScene().getWindow();
+            javafx.scene.Scene scene = row.getView().getScene() != null ? row.getView().getScene() : mstSection.getScene();
+            Stage stage = scene != null ? (Stage) scene.getWindow() : null;
 
             ExamScopeDialog dialog = new ExamScopeDialog(
                     exam, subject.getSubjectCode(), active.getSemesterId(),

@@ -62,6 +62,7 @@ public class MainApp extends Application {
 
     private DashboardView dashboardView;
     private CalendarGridView calendarGridView;
+    private com.learntrack.ui.views.PlanInsightsView planInsightsView;
     private DatesheetAnalyserView datesheetAnalyserView;
     private ExamFormController examFormController;
     private TopicFormController topicFormController;
@@ -168,6 +169,15 @@ public class MainApp extends Application {
                 ExamTimelineService examTimelineService = new ExamTimelineService();
                 for (String examType : List.of("MST", "EST")) {
                     if (timelineDAO.isDatesheetAnnounced(active.getSemesterId(), examType)) {
+                        // Once a sheet is announced, a tentative date on one of its exams is a stale guess
+                        // from before the sheet: show it as "Date TBD" so it cannot stretch the exam period.
+                        for (com.learntrack.model.Exam e : examDAO.findBySemester(active.getSemesterId())) {
+                            if (examType.equalsIgnoreCase(e.getExamType()) && e.getExamDate() != null && e.isExamDateTentative()) {
+                                e.setExamDate(null);
+                                e.setExamDateTentative(false);
+                                examDAO.update(e);
+                            }
+                        }
                         examTimelineService.recomputeWindowFromDatesheet(active.getSemesterId(), examType);
                     }
                 }
@@ -218,6 +228,9 @@ public class MainApp extends Application {
             tabDash.setClosable(false);
 
             Tab tabCal = new Tab("Calendar", calendarGridView.getView());
+            planInsightsView = new com.learntrack.ui.views.PlanInsightsView(replanService, feasibilityBarView);
+            Tab tabCoverage = new Tab("Coverage", planInsightsView.getView());
+            tabCoverage.setClosable(false);
             tabCal.setClosable(false);
 
             Tab tabTopics = new Tab("Subjects", topicFormController.getView());
@@ -251,7 +264,7 @@ public class MainApp extends Application {
             tabSettings.setClosable(false);
 
             tabPane.getTabs().addAll(
-                    tabDash, tabCal, tabExams, tabTopics, tabSkills, tabDatesheetAnalyser,
+                    tabDash, tabCal, tabCoverage, tabExams, tabTopics, tabSkills, tabDatesheetAnalyser,
                     timetableTab, tabSettings
             );
             mainTabPane = tabPane;
@@ -264,6 +277,7 @@ public class MainApp extends Application {
                 if (replanRunner != null && replanRunner.isBusy()) return;
                 if (newTab == tabDash) dashboardView.refreshData();
                 else if (newTab == tabCal) calendarGridView.refreshCalendar();
+                else if (newTab == tabCoverage) planInsightsView.refresh();
                 else if (newTab == tabExams) examFormController.loadExams();
                 else if (newTab == tabSkills) skillFormController.loadSkills();
             });
@@ -279,6 +293,7 @@ public class MainApp extends Application {
             Node sidebar = buildSidebar(tabPane, List.of(
                     new NavEntry("PLAN", "Today", UiKit.Icon.HOME, tabDash),
                     new NavEntry(null, "Calendar", UiKit.Icon.CALENDAR, tabCal),
+                    new NavEntry(null, "Coverage", UiKit.Icon.TARGET, tabCoverage),
                     new NavEntry("STUDY", "Exams", UiKit.Icon.EXAM, tabExams),
                     new NavEntry(null, "Subjects", UiKit.Icon.BOOK, tabTopics),
                     new NavEntry(null, "Skills", UiKit.Icon.BOLT, tabSkills),
@@ -309,7 +324,7 @@ public class MainApp extends Application {
 
             // Keyboard: Ctrl+1 .. Ctrl+8 jump straight to a tab.
             List<Tab> orderedTabs = List.of(
-                    tabDash, tabCal, tabExams, tabTopics, tabSkills, tabDatesheetAnalyser,
+                    tabDash, tabCal, tabCoverage, tabExams, tabTopics, tabSkills, tabDatesheetAnalyser,
                     timetableTab, tabSettings);
             for (int i = 0; i < orderedTabs.size(); i++) {
                 final Tab target = orderedTabs.get(i);
@@ -399,7 +414,7 @@ public class MainApp extends Application {
         syncSelection.run();
 
         // Live coverage card: what share of the exam-weighted syllabus the plan secures.
-        Label coverageTitle = new Label("Syllabus coverage");
+        Label coverageTitle = new Label("Syllabus learned");
         coverageTitle.getStyleClass().add("sidebar-chip-title");
         coverageValue = new Label("–");
         coverageValue.getStyleClass().add("sidebar-chip-title");
@@ -506,14 +521,13 @@ public class MainApp extends Application {
             coverageHint.setText("Add exams with a syllabus scope to see coverage.");
             return;
         }
-        double pct = plan.overallCoverage();
-        coverageValue.setText(Math.round(pct * 100) + "%");
-        coverageBar.setProgress(pct);
-        int critical = plan.criticalAtRiskCount();
+        double learned = plan.overallLearned();
+        double byExam = plan.overallCoverage();
+        coverageValue.setText(Math.round(learned * 100) + "%");
+        coverageBar.setProgress(learned);
         int risk = plan.atRiskCount();
-        coverageHint.setText(risk == 0 ? "Everything fits before its exam."
-                : critical > 0 ? critical + " high-priority topic(s) don't fit yet"
-                : risk + " low-priority topic(s) don't fit");
+        coverageHint.setText(risk == 0 ? Math.round(byExam * 100) + "% by exam day; everything fits."
+                : risk + " topic" + (risk == 1 ? "" : "s") + " don't fit before the exam. See Coverage.");
     }
 
     private Node createSettingsView() {
@@ -553,22 +567,6 @@ public class MainApp extends Application {
         addSettingRow(grid, 2, "EST exam duration (minutes)",
                 "Length used for end-semester exam sittings.", estExamDurationSpinner);
 
-        ComboBox<String> orderChoice = new ComboBox<>();
-        orderChoice.getItems().addAll("Most important first", "Syllabus order");
-        orderChoice.setValue("SYLLABUS".equalsIgnoreCase(readSetting("planner_order_mode", "IMPORTANCE"))
-                ? "Syllabus order" : "Most important first");
-        addSettingRow(grid, 3, "Study order inside an exam",
-                "Must-know topics first is safest when time is short; syllabus order suits subjects that build on earlier units.",
-                orderChoice);
-
-        Spinner<Integer> bufferSpinner = new Spinner<>(0, 40, 10, 5);
-        bufferSpinner.setEditable(true);
-        bufferSpinner.getValueFactory().setValue((int) Math.round(
-                (1.0 - readDoubleSetting("planner_capacity_factor", 0.9)) * 100));
-        addSettingRow(grid, 4, "Safety buffer (% of free time)",
-                "Free time the planner keeps in reserve for slips when it decides which topics fit before an exam.",
-                bufferSpinner);
-
         Button btnSaveSettings = UiKit.primaryButton("Save Settings");
         if (replanRunner != null) {
             btnSaveSettings.disableProperty().bind(replanRunner.busyProperty());
@@ -578,10 +576,6 @@ public class MainApp extends Application {
                 settingsDAO.set("pyq_practice_hours", String.valueOf(pyqHoursSpinner.getValue()));
                 settingsDAO.set("mst_exam_duration_minutes", String.valueOf(examDurationSpinner.getValue()));
                 settingsDAO.set("est_exam_duration_minutes", String.valueOf(estExamDurationSpinner.getValue()));
-                settingsDAO.set("planner_order_mode",
-                        "Syllabus order".equals(orderChoice.getValue()) ? "SYLLABUS" : "IMPORTANCE");
-                settingsDAO.set("planner_capacity_factor",
-                        String.valueOf(1.0 - bufferSpinner.getValue() / 100.0));
 
                 Runnable afterReplan = () -> {
                     refreshAllViews();
@@ -612,24 +606,6 @@ public class MainApp extends Application {
                 grid,
                 planningActions);
 
-        // ---- Appearance -----------------------------------------------------
-        ComboBox<String> themeChoice = new ComboBox<>();
-        themeChoice.getItems().addAll("Light", "Dark");
-        themeChoice.setPrefWidth(160);
-        themeChoice.setValue(Theme.isDark(readSetting(Theme.SETTING_KEY, "light")) ? "Dark" : "Light");
-        themeChoice.setOnAction(e -> {
-            boolean dark = "Dark".equals(themeChoice.getValue());
-            Theme.apply(primaryStage.getScene(), dark);
-            writeSetting(Theme.SETTING_KEY, dark ? "dark" : "light");
-            UiKit.toast(dark ? "Dark theme enabled." : "Light theme enabled.", UiKit.Kind.INFO);
-        });
-
-        GridPane appearanceGrid = new GridPane();
-        appearanceGrid.setHgap(16);
-        appearanceGrid.setVgap(12);
-        addSettingRow(appearanceGrid, 0, "Theme",
-                "Applies immediately and is remembered on the next launch.", themeChoice);
-        appearanceGrid.getColumnConstraints().addAll(labelCol, controlCol);
 
         Button btnResetWindow = UiKit.secondaryButton("Reset window size & position");
         btnResetWindow.setOnAction(e -> resetWindowBounds());
@@ -641,9 +617,8 @@ public class MainApp extends Application {
         windowGrid.getColumnConstraints().addAll(labelCol, controlCol);
 
         VBox appearanceCard = UiKit.card(
-                UiKit.sectionTitle("Appearance & window"),
-                UiKit.subtle("Light is the default. Dark mode keeps the same layout and contrast rules."),
-                appearanceGrid,
+                UiKit.sectionTitle("Window"),
+                UiKit.subtle("Light or dark mode is the switch at the bottom of the sidebar."),
                 windowGrid);
 
         // Semester Rollover Card
@@ -935,6 +910,7 @@ public class MainApp extends Application {
         refreshSidebarCoverage();
         if (dashboardView != null) dashboardView.refreshData();
         if (calendarGridView != null) calendarGridView.refreshCalendar();
+        if (planInsightsView != null) planInsightsView.refresh();
         if (examFormController != null) examFormController.loadExams();
         if (topicFormController != null) topicFormController.loadExams();
         if (skillFormController != null) skillFormController.loadSkills();

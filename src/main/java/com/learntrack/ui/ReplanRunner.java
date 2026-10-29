@@ -101,6 +101,65 @@ public class ReplanRunner {
         });
     }
 
+    /** Database work done off the UI thread before a replan. */
+    @FunctionalInterface
+    public interface Work {
+        void run() throws Exception;
+    }
+
+    /** Edits queued by {@link #runAfter} that have not replanned yet. */
+    private final java.util.concurrent.atomic.AtomicInteger queuedEdits = new java.util.concurrent.atomic.AtomicInteger();
+
+    /**
+     * Runs {@code work} (e.g. marking a session done) and then a replan, both in the background, so
+     * the UI never waits. Several quick edits in a row share one replan: an edit skips its replan
+     * when another edit is already queued behind it, and the last one replans for all of them.
+     * Must be called from the JavaFX Application Thread.
+     */
+    public void runAfter(Work work, int semesterId, Runnable onSuccess, Consumer<Throwable> onError) {
+        pendingCount++;
+        busy.set(true);
+        queuedEdits.incrementAndGet();
+
+        executor.execute(() -> {
+            Throwable error = null;
+            boolean replanned = false;
+            try {
+                work.run();
+            } catch (Throwable t) {
+                error = t;
+            }
+            if (queuedEdits.decrementAndGet() == 0 && error == null) {
+                try {
+                    replanService.regenerateSemesterPlan(semesterId, LocalDate.now());
+                    replanned = true;
+                } catch (Throwable t) {
+                    error = t;
+                }
+            }
+            final Throwable finalError = error;
+            final boolean finalReplanned = replanned;
+            try {
+                Platform.runLater(() -> {
+                    pendingCount--;
+                    if (pendingCount <= 0) {
+                        pendingCount = 0;
+                        busy.set(false);
+                    }
+                    if (executor.isShutdown()) return;
+                    if (finalError != null) {
+                        finalError.printStackTrace();
+                        if (onError != null) onError.accept(finalError); else showDefaultError(finalError);
+                    } else if (finalReplanned && onSuccess != null) {
+                        onSuccess.run();
+                    }
+                });
+            } catch (IllegalStateException ignored) {
+                // JavaFX toolkit may have shut down
+            }
+        });
+    }
+
     private void showDefaultError(Throwable t) {
         UiKit.error(null, "Replanning Failed", t);
     }

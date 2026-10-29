@@ -12,8 +12,8 @@ import java.util.*;
  *
  * <h3>Model</h3>
  * Every exam is worth {@code examWeight = credits × marks}. That worth is shared between the
- * exam's in-scope topics in proportion to their importance weight, so a topic's value is roughly
- * "the marks it is likely to carry". A topic's cost is the learning hours it still needs plus one
+ * exam's in-scope topics equally, so the plan maximises how much of each syllabus gets learned
+ * (weighted by what each exam is worth). A topic's cost is the learning hours it still needs plus one
  * revision cycle. Each exam also reserves time it will need anyway: one revision of the topics
  * that are already learned, and the remaining PYQ practice.
  *
@@ -23,11 +23,11 @@ import java.util.*;
  * whose exam falls on or before D must fit inside the free study hours available before D.
  * Because the day-by-day planner serves topics earliest-deadline-first, a set that passes this
  * test can actually be scheduled. When everything fits, everything is planned; when it does not,
- * the cheapest-to-skip, least important topics are the ones left out.
+ * the longest topics of the least valuable exams are the ones left out, so the most topics fit.
  *
  * <h3>Order</h3>
- * Inside an exam, planned topics are studied must-know first (then syllabus order), or in plain
- * syllabus order when the user prefers that. Topics that do not fit come after every planned topic
+ * Inside an exam, planned topics are learned in syllabus order (importance only matters for
+ * revision). Topics that do not fit come after every planned topic
  * of the same exam, so they never hold the important ones back.
  */
 public class CoverageOptimizer {
@@ -95,11 +95,12 @@ public class CoverageOptimizer {
             capacityBefore.put(e.getExamId(), sum * factor);
         }
 
-        // Per exam: total importance weight of everything in scope (learned or not).
+        // Per exam: number of topics in scope (learned or not). Every topic counts the same while
+        // learning, so the plan covers as much of the syllabus as possible; importance only steers revision.
         Map<Integer, Double> weightSum = new HashMap<>();
         for (Topic t : topics) {
             if (t.getImportantFlag() != 1) continue;
-            weightSum.merge(t.getExamId(), importanceWeight(t.getImportance()), Double::sum);
+            weightSum.merge(t.getExamId(), 1.0, Double::sum);
         }
 
         CoveragePlan plan = new CoveragePlan(fromDate);
@@ -123,7 +124,7 @@ public class CoverageOptimizer {
             }
             Exam e = examById.get(t.getExamId());
             double examValue = Math.max(scoringService.examWeight(e), 1.0);
-            double value = examValue * importanceWeight(t.getImportance())
+            double value = examValue
                     / Math.max(weightSum.getOrDefault(t.getExamId(), 1.0), 1e-9);
             cov.totalValue += value;
             cov.totalTopics++;
@@ -154,9 +155,8 @@ public class CoverageOptimizer {
             cumulative += allowed;
         }
 
-        // Value per hour, best first; ties favour importance, then syllabus order.
+        // Value per hour, best first (shorter topics first when time is short); ties keep syllabus order.
         candidates.sort(Comparator.comparingDouble((Candidate c) -> -c.value / Math.max(c.cost, 0.25))
-                .thenComparing(c -> -c.topic.getImportance())
                 .thenComparingLong(c -> c.topic.getSyllabusOrder())
                 .thenComparing(c -> c.topic.getTopicId()));
 

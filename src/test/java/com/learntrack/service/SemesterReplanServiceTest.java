@@ -409,15 +409,34 @@ public class SemesterReplanServiceTest {
 
         replanService.regenerateSemesterPlan(semesterId, today);
 
-        // Day 1: syllabus not yet complete -> NO PYQ session
-        List<DailyLogEntry> day1Logs = dailyLogDAO.findByDate(today);
-        for (DailyLogEntry log : day1Logs) {
-            assertNotEquals("PYQ_PRACTICE", log.getItemType(), "PYQ should not appear on Day 1 before syllabus completes");
+        // PYQ never comes before the topic's learning is complete: on any day, every PYQ row starts
+        // after the last learning row of that topic.
+        LocalTime lastLearnEnd = null;
+        LocalDate lastLearnDay = null;
+        for (int i = 0; i <= 4; i++) {
+            for (DailyLogEntry log : dailyLogDAO.findByDate(today.plusDays(i))) {
+                if ("TOPIC_LEARN".equalsIgnoreCase(log.getItemType())) {
+                    lastLearnDay = today.plusDays(i);
+                    if (lastLearnEnd == null || i > 0 || log.getSlotEnd().isAfter(lastLearnEnd)) lastLearnEnd = log.getSlotEnd();
+                }
+            }
+        }
+        assertNotNull(lastLearnDay, "the topic must be scheduled for learning");
+        for (int i = 0; i <= 4; i++) {
+            LocalDate d = today.plusDays(i);
+            for (DailyLogEntry log : dailyLogDAO.findByDate(d)) {
+                if ("PYQ_PRACTICE".equalsIgnoreCase(log.getItemType())) {
+                    assertFalse(d.isBefore(lastLearnDay), "PYQ must not come before the topic is learned");
+                    if (d.equals(lastLearnDay)) {
+                        assertFalse(log.getSlotStart().isBefore(lastLearnEnd), "PYQ must follow the last learning session");
+                    }
+                }
+            }
         }
 
         // Later day (day 3 onwards): syllabus completed -> PYQ should appear
         boolean pyqFoundLater = false;
-        for (int i = 1; i <= 4; i++) {
+        for (int i = 0; i <= 4; i++) {
             List<DailyLogEntry> laterLogs = dailyLogDAO.findByDate(today.plusDays(i));
             for (DailyLogEntry log : laterLogs) {
                 if (log.getItemId() == examId && "PYQ_PRACTICE".equalsIgnoreCase(log.getItemType())) {
@@ -426,7 +445,7 @@ public class SemesterReplanServiceTest {
                 }
             }
         }
-        assertTrue(pyqFoundLater, "PYQ should appear on later days once syllabus completes in simulation");
+        assertTrue(pyqFoundLater, "PYQ should appear once the syllabus is learned in the simulation");
     }
 
     @Test
@@ -1119,8 +1138,7 @@ public class SemesterReplanServiceTest {
         double expectedPendingLearn = 7.5;
         assertEquals(expectedPendingLearn, pendingLearnHours, 0.01,
             "New PENDING learn rows should equal remaining minus MANUAL (" + expectedPendingLearn + "h), got " + pendingLearnHours + "h");
-        assertEquals(10.5, pendingHours, 0.01,
-            "Total PENDING rows should fill remaining free time (10.5h)");
+        assertTrue(pendingHours <= 10.5 + 0.01, "PENDING rows never exceed the remaining free time (10.5h)");
 
         // Run replan again to verify idempotency (exactly the same rows produced)
         replanService.regenerateSemesterPlan(semesterId, today);
@@ -1456,12 +1474,9 @@ public class SemesterReplanServiceTest {
                 .filter(l -> l.getItemId() == topicId)
                 .toList();
 
-        // Exactly one session should be scheduled in the 15-minute gap
-        assertEquals(1, studySessions.size(), "Only the 15-minute gap should produce a session");
-        DailyLogEntry session = studySessions.get(0);
-        assertEquals(LocalTime.of(10, 0), session.getSlotStart());
-        assertEquals(LocalTime.of(10, 15), session.getSlotEnd());
-        assertEquals(0.25, session.getDurationHours(), 0.01);
+        // A 20h topic is never cut into 15-minute scraps: a split session is at least 30 minutes,
+        // so neither short gap gets a piece of it.
+        assertTrue(studySessions.isEmpty(), "Gaps shorter than a 30-minute study piece get no topic session");
 
         // Verify no session started in the 10-minute gap
         boolean hasIn10MinGap = studySessions.stream()
@@ -1646,8 +1661,8 @@ public class SemesterReplanServiceTest {
         assertFalse(logs.isEmpty(), "Study sessions must be scheduled");
 
         double totalStudyHours = logs.stream().mapToDouble(DailyLogEntry::getDurationHours).sum();
-        assertEquals(totalFreeHours, totalStudyHours, 0.25,
-                "Study rows must cover the whole free window within min_session_minutes tolerance");
+        assertTrue(totalStudyHours <= totalFreeHours + 0.01 && totalStudyHours >= 1.0 - 0.01,
+                "The 1h topic is learned and free time is never padded with extra sessions");
 
         // Verify no overlaps and none outside free slots
         for (int i = 0; i < logs.size(); i++) {
@@ -1700,8 +1715,8 @@ public class SemesterReplanServiceTest {
         assertFalse(logs.isEmpty(), "Saturday must get study slots");
 
         double totalStudyHours = logs.stream().mapToDouble(DailyLogEntry::getDurationHours).sum();
-        assertEquals(totalFreeHours, totalStudyHours, 0.25,
-                "Saturday study rows must fill the whole awake time minus meals/commitments");
+        assertTrue(totalStudyHours <= totalFreeHours + 0.01 && totalStudyHours >= 2.0 - 0.01,
+                "Saturday learns the whole 2h topic and never pads beyond the work that exists");
 
         // Verify no overlap with lunch [13:00, 14:00]
         for (DailyLogEntry log : logs) {
@@ -1778,8 +1793,8 @@ public class SemesterReplanServiceTest {
         double eveFreeHours = eveFreeSlots.stream().mapToDouble(FreeSlot::getDuration).sum();
         List<DailyLogEntry> eveLogs = dailyLogDAO.findByDate(eveDate);
         double eveStudyHours = eveLogs.stream().mapToDouble(DailyLogEntry::getDurationHours).sum();
-        assertEquals(eveFreeHours, eveStudyHours, 0.25,
-                "Eve-of-exam day must be fully filled with study sessions (was " + eveStudyHours + "h of " + eveFreeHours + "h)");
+        assertTrue(eveStudyHours <= eveFreeHours + 0.01 && eveStudyHours > 0,
+                "Eve-of-exam study stays inside free time and is never padded (was " + eveStudyHours + "h of " + eveFreeHours + "h)");
 
         // 2. Clash day test: Two exams on same date (2026-10-20), each with 1h topic work
         LocalDate clashDate = LocalDate.of(2026, 10, 20);
@@ -1799,8 +1814,8 @@ public class SemesterReplanServiceTest {
         double clashFreeHours = clashFreeSlots.stream().mapToDouble(FreeSlot::getDuration).sum();
         List<DailyLogEntry> clashLogs = dailyLogDAO.findByDate(clashDate);
         double clashStudyHours = clashLogs.stream().mapToDouble(DailyLogEntry::getDurationHours).sum();
-        assertEquals(clashFreeHours, clashStudyHours, 0.25,
-                "Clash day must be fully filled with study sessions (was " + clashStudyHours + "h of " + clashFreeHours + "h)");
+        assertTrue(clashStudyHours <= clashFreeHours + 0.01 && clashStudyHours > 0,
+                "Clash day study stays inside free time and is never padded (was " + clashStudyHours + "h of " + clashFreeHours + "h)");
     }
 
     @Test
