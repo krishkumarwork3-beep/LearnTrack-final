@@ -357,6 +357,18 @@ public class DatesheetAnalyserService {
     public void apply(int semesterId, List<DatesheetMatchRow> rows, LocalDate sheetStart, LocalDate sheetEnd,
                      Map<String, DatesheetEntry> resolutions, Set<String> skipped,
                      String chosenExamType) throws SQLException {
+        apply(semesterId, rows, sheetStart, sheetEnd, resolutions, skipped, chosenExamType, null);
+    }
+
+    /**
+     * As above, plus {@code notOnSheet}: the subject codes the analysis found nowhere on the sheet.
+     * Their exams of this batch lose any old date ("Date TBD"), because a date that is not on the
+     * official sheet must neither show as the exam date nor stretch the exam period. Ambiguous or
+     * skipped subjects are on the sheet, so they are never in this set and keep their dates.
+     */
+    public void apply(int semesterId, List<DatesheetMatchRow> rows, LocalDate sheetStart, LocalDate sheetEnd,
+                     Map<String, DatesheetEntry> resolutions, Set<String> skipped,
+                     String chosenExamType, Set<String> notOnSheet) throws SQLException {
         boolean hasResolutions = resolutions != null && !resolutions.isEmpty();
         if ((rows == null || rows.isEmpty()) && !hasResolutions) {
             return;
@@ -490,7 +502,7 @@ public class DatesheetAnalyserService {
         // Exams of this batch that the sheet does not list lose their old date ("Date TBD"): a stale
         // "1 Dec" or "31 Dec" is not on the official sheet, so it must neither show as the exam date
         // nor stretch the exam period (and cancel classes) across the whole month.
-        clearDatesNotOnSheet(semesterId, targetExamType, allRows);
+        clearDatesNotOnSheet(semesterId, targetExamType, notOnSheet);
 
         ExamTimelineDAO timelineDAO = new ExamTimelineDAO();
         timelineDAO.setDatesheetAnnounced(semesterId, targetExamType, true);
@@ -502,18 +514,16 @@ public class DatesheetAnalyserService {
         }
     }
 
-    private void clearDatesNotOnSheet(int semesterId, String targetExamType, List<DatesheetMatchRow> allRows)
+    private void clearDatesNotOnSheet(int semesterId, String targetExamType, Set<String> notOnSheet)
             throws SQLException {
-        Set<String> appliedCodes = new HashSet<>();
-        for (DatesheetMatchRow row : allRows) {
-            if (row.getCourseCode() != null) appliedCodes.add(row.getCourseCode().trim().toUpperCase());
-            if (row.getUserSubjectName() != null) appliedCodes.add(row.getUserSubjectName().trim().toUpperCase());
+        if (notOnSheet == null || notOnSheet.isEmpty()) return;
+        Set<String> codes = new HashSet<>();
+        for (String c : notOnSheet) {
+            if (c != null) codes.add(c.trim().toUpperCase());
         }
         for (Exam e : examDAO.findBySemester(semesterId)) {
             if (!targetExamType.equalsIgnoreCase(e.getExamType()) || e.getExamDate() == null) continue;
-            boolean onSheet = (e.getSubjectCode() != null && appliedCodes.contains(e.getSubjectCode().trim().toUpperCase()))
-                    || (e.getSubject() != null && appliedCodes.contains(e.getSubject().trim().toUpperCase()));
-            if (!onSheet) {
+            if (e.getSubjectCode() != null && codes.contains(e.getSubjectCode().trim().toUpperCase())) {
                 e.setExamDate(null);
                 e.setExamDateTentative(false);
                 examDAO.update(e);

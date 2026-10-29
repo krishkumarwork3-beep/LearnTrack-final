@@ -986,7 +986,11 @@ public class DatesheetAnalyserView {
             }
 
             // Apply updates to DB; the service derives the window from the exams it dates.
-            analyserService.apply(semId, rows, resolutions, skipped, examType);
+            Set<String> notOnSheet = new HashSet<>();
+            for (SubjectInfo s : lastUnmatched) {
+                if (s.getSubjectCode() != null) notOnSheet.add(s.getSubjectCode());
+            }
+            analyserService.apply(semId, rows, null, null, resolutions, skipped, examType, notOnSheet);
 
             // Show the window the exams will actually span: first to last of MY dated exams
             // (the sheet lists every batch, so its own range is not the user's exam period).

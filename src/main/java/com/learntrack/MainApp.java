@@ -169,15 +169,6 @@ public class MainApp extends Application {
                 ExamTimelineService examTimelineService = new ExamTimelineService();
                 for (String examType : List.of("MST", "EST")) {
                     if (timelineDAO.isDatesheetAnnounced(active.getSemesterId(), examType)) {
-                        // Once a sheet is announced, a tentative date on one of its exams is a stale guess
-                        // from before the sheet: show it as "Date TBD" so it cannot stretch the exam period.
-                        for (com.learntrack.model.Exam e : examDAO.findBySemester(active.getSemesterId())) {
-                            if (examType.equalsIgnoreCase(e.getExamType()) && e.getExamDate() != null && e.isExamDateTentative()) {
-                                e.setExamDate(null);
-                                e.setExamDateTentative(false);
-                                examDAO.update(e);
-                            }
-                        }
                         examTimelineService.recomputeWindowFromDatesheet(active.getSemesterId(), examType);
                     }
                 }

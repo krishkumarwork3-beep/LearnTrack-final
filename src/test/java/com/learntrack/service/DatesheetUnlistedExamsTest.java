@@ -52,7 +52,7 @@ class DatesheetUnlistedExamsTest {
         List<DatesheetMatchRow> rows = List.of(new DatesheetMatchRow("UCS539", "UCS539", "UCS539", "EST",
                 LocalDate.of(2026, 12, 3), LocalTime.of(9, 0), LocalTime.of(12, 0), "Matched"));
 
-        service.apply(semesterId, rows, null, null, null, new HashSet<>(), "EST");
+        service.apply(semesterId, rows, null, null, null, new HashSet<>(), "EST", java.util.Set.of("UCS420", "UCS421"));
 
         Exam listed = examDAO.findBySubject(semesterId, "UCS539").get(0);
         assertEquals(LocalDate.of(2026, 12, 3), listed.getExamDate());
